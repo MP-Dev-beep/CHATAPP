@@ -26,12 +26,15 @@ export function connectWebSocket(
         }
 
 
+
         currentSubscription =
             stompClient.subscribe(
 
+
                 `/topic/conversation/${conversationId}`,
 
-                message=>{
+
+                message => {
 
 
                     const data =
@@ -51,6 +54,7 @@ export function connectWebSocket(
 
                 }
 
+
             );
 
 
@@ -58,6 +62,13 @@ export function connectWebSocket(
 
     }
 
+
+
+
+
+
+    const token =
+        localStorage.getItem("token");
 
 
 
@@ -78,14 +89,17 @@ export function connectWebSocket(
 
 
 
+
             connectHeaders:{
 
 
                 Authorization:
-                `Bearer ${localStorage.getItem("token")}`
+                `Bearer ${token}`
 
 
             },
+
+
 
 
 
@@ -111,13 +125,15 @@ export function connectWebSocket(
 
 
 
-            onConnect:()=>{
 
+            onConnect:()=>{
 
 
                 console.log(
                     "STOMP connecté"
                 );
+
+
 
 
 
@@ -130,13 +146,16 @@ export function connectWebSocket(
                     `/topic/conversation/${conversationId}`,
 
 
+
                     message=>{
 
 
                         const data =
+
                             JSON.parse(
                                 message.body
                             );
+
 
 
 
@@ -151,6 +170,7 @@ export function connectWebSocket(
                             data
                         );
 
+
                     }
 
 
@@ -158,9 +178,46 @@ export function connectWebSocket(
 
 
 
+            },
+
+
+
+
+
+
+
+            onStompError:(frame)=>{
+
+
+                console.error(
+                    "Erreur STOMP :",
+                    frame
+                );
+
+
+            },
+
+
+
+
+
+            onWebSocketError:(error)=>{
+
+
+                console.error(
+                    "Erreur WebSocket :",
+                    error
+                );
+
+
             }
 
+
+
         });
+
+
+
 
 
 
@@ -168,7 +225,9 @@ export function connectWebSocket(
     stompClient.activate();
 
 
+
 }
+
 
 
 
@@ -189,13 +248,30 @@ export function sendMessage(
         !stompClient.connected
     ){
 
+
         console.log(
             "STOMP non connecté"
         );
 
+
         return;
 
+
     }
+
+
+
+
+
+
+    const token =
+
+        localStorage.getItem(
+            "token"
+        );
+
+
+
 
 
 
@@ -203,21 +279,45 @@ export function sendMessage(
     stompClient.publish({
 
 
+
         destination:
-        "/app/chat.send",
+
+            "/app/chat.send",
+
+
+
+
+
+        headers:{
+
+
+            Authorization:
+
+            `Bearer ${token}`
+
+
+        },
+
+
+
 
 
 
         body:
-        JSON.stringify({
 
 
-            conversationId,
-
-            content
+            JSON.stringify({
 
 
-        })
+
+                conversationId,
+
+
+                content
+
+
+
+            })
 
 
 
@@ -225,9 +325,13 @@ export function sendMessage(
 
 
 
+
+
+
     console.log(
-        "Message envoyé"
+        "Message envoyé avec JWT"
     );
+
 
 
 }
@@ -239,26 +343,42 @@ export function sendMessage(
 
 
 
+
+
+
 export function disconnectWebSocket(){
+
+
+
 
 
     if(currentSubscription){
 
+
         currentSubscription.unsubscribe();
 
-        currentSubscription=null;
+
+        currentSubscription = null;
+
 
     }
+
+
+
 
 
 
     if(stompClient){
 
+
         stompClient.deactivate();
 
-        stompClient=null;
+
+        stompClient = null;
+
 
     }
+
 
 
 }
