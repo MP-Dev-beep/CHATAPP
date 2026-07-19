@@ -8,20 +8,15 @@ import com.chatapp.chatapp.dto.UpdateProfileRequest;
 import com.chatapp.chatapp.dto.UserResponse;
 
 import com.chatapp.chatapp.entity.User;
-
 import com.chatapp.chatapp.repository.UserRepository;
 
-
 import lombok.RequiredArgsConstructor;
-
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 
 @Service
@@ -29,13 +24,11 @@ import java.util.stream.Collectors;
 public class UserService {
 
 
-
     private final UserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
 
     private final JwtService jwtService;
-
 
 
 
@@ -102,9 +95,8 @@ public class UserService {
 
 
 
-
     // ==========================
-    // CONNEXION JWT
+    // LOGIN JWT
     // ==========================
 
     public AuthResponse login(
@@ -112,31 +104,71 @@ public class UserService {
     ) {
 
 
+        System.out.println("======================");
+        System.out.println("TENTATIVE CONNEXION");
+        System.out.println("EMAIL : " + request.getEmail());
+        System.out.println("======================");
 
-        User user = userRepository.findByEmail(
-                request.getEmail()
-        )
 
-        .orElseThrow(() ->
-                new RuntimeException(
-                        "Utilisateur introuvable"
+
+        User user =
+                userRepository.findByEmail(
+                        request.getEmail()
                 )
+
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Utilisateur introuvable"
+                        )
+                );
+
+
+
+        System.out.println(
+                "UTILISATEUR TROUVE : "
+                +
+                user.getEmail()
+        );
+
+
+        System.out.println(
+                "HASH EN BASE : "
+                +
+                user.getPassword()
+        );
+
+
+
+        boolean passwordCorrect =
+                passwordEncoder.matches(
+
+                        request.getPassword(),
+
+                        user.getPassword()
+
+                );
+
+
+
+        System.out.println(
+                "PASSWORD VALIDE : "
+                +
+                passwordCorrect
         );
 
 
 
 
-        if(!passwordEncoder.matches(
-                request.getPassword(),
-                user.getPassword()
-        )) {
+        if(!passwordCorrect){
 
 
             throw new RuntimeException(
                     "Mot de passe incorrect"
             );
 
+
         }
+
 
 
 
@@ -149,7 +181,7 @@ public class UserService {
 
 
 
-        UserResponse userResponse =
+        UserResponse response =
                 UserResponse.builder()
 
                         .id(user.getId())
@@ -165,13 +197,15 @@ public class UserService {
 
 
 
+
         return AuthResponse.builder()
 
                 .token(token)
 
-                .user(userResponse)
+                .user(response)
 
                 .build();
+
 
     }
 
@@ -182,12 +216,13 @@ public class UserService {
 
 
 
+
     // ==========================
-    // TOUS LES UTILISATEURS
+    // LISTE UTILISATEURS
     // ==========================
+
 
     public List<UserResponse> getAllUsers() {
-
 
 
         return userRepository.findAll()
@@ -195,6 +230,7 @@ public class UserService {
                 .stream()
 
                 .map(user ->
+
                         UserResponse.builder()
 
                                 .id(user.getId())
@@ -206,6 +242,7 @@ public class UserService {
                                 .email(user.getEmail())
 
                                 .build()
+
                 )
 
                 .collect(Collectors.toList());
@@ -218,17 +255,20 @@ public class UserService {
 
 
 
+
+
     // ==========================
-    // RECHERCHE
+    // RECHERCHE UTILISATEUR
     // ==========================
+
 
     public List<UserResponse> searchUsers(
             String keyword
     ) {
 
 
-
         return userRepository
+
                 .findByFirstnameContainingIgnoreCaseOrLastnameContainingIgnoreCase(
                         keyword,
                         keyword
@@ -237,6 +277,7 @@ public class UserService {
                 .stream()
 
                 .map(user ->
+
                         UserResponse.builder()
 
                                 .id(user.getId())
@@ -248,6 +289,7 @@ public class UserService {
                                 .email(user.getEmail())
 
                                 .build()
+
                 )
 
                 .collect(Collectors.toList());
@@ -260,9 +302,13 @@ public class UserService {
 
 
 
+
+
+
     // ==========================
-    // MODIFIER PROFIL
+    // UPDATE PROFIL
     // ==========================
+
 
     public UserResponse updateProfile(
             String email,
@@ -270,8 +316,8 @@ public class UserService {
     ) {
 
 
-
-        User user = userRepository.findByEmail(email)
+        User user =
+                userRepository.findByEmail(email)
 
                 .orElseThrow(() ->
                         new RuntimeException(
@@ -281,8 +327,7 @@ public class UserService {
 
 
 
-
-        if(request.getFirstname() != null) {
+        if(request.getFirstname()!=null){
 
             user.setFirstname(
                     request.getFirstname()
@@ -292,8 +337,7 @@ public class UserService {
 
 
 
-
-        if(request.getLastname() != null) {
+        if(request.getLastname()!=null){
 
             user.setLastname(
                     request.getLastname()
@@ -303,8 +347,7 @@ public class UserService {
 
 
 
-
-        if(request.getAvatar() != null) {
+        if(request.getAvatar()!=null){
 
             user.setAvatar(
                     request.getAvatar()
@@ -314,8 +357,7 @@ public class UserService {
 
 
 
-
-        User savedUser =
+        User saved =
                 userRepository.save(user);
 
 
@@ -323,16 +365,18 @@ public class UserService {
 
         return UserResponse.builder()
 
-                .id(savedUser.getId())
+                .id(saved.getId())
 
-                .firstname(savedUser.getFirstname())
+                .firstname(saved.getFirstname())
 
-                .lastname(savedUser.getLastname())
+                .lastname(saved.getLastname())
 
-                .email(savedUser.getEmail())
+                .email(saved.getEmail())
 
                 .build();
 
+
     }
+
 
 }

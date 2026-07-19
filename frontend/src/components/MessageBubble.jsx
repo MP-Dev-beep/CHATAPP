@@ -1,3 +1,9 @@
+import {
+    useUsers
+} from "../context/UserContext";
+
+
+
 function MessageBubble({
 
     message
@@ -6,14 +12,18 @@ function MessageBubble({
 
 
 
+    const {
+        user
+    } = useUsers();
+
+
+
 
 
     const myMessage =
 
-        message.senderFirstname
-        ===
-        localStorage.getItem("firstname");
-
+        user &&
+        message.senderId === user.id;
 
 
 
@@ -21,6 +31,7 @@ function MessageBubble({
 
 
     return (
+
 
 
         <div
@@ -61,44 +72,48 @@ function MessageBubble({
             <small>
 
 
+
                 {
 
-                message.sentAt
-
-                ?
-
-                new Date(
                     message.sentAt
-                )
-                .toLocaleTimeString(
-                    [],
-                    {
-                        hour:"2-digit",
-                        minute:"2-digit"
-                    }
-                )
-
-                :
-
-                ""
-
-                }
-
-
-
-                {
-
-                    message.status
 
                     ?
 
-                    ` ${message.status}`
+                    new Date(
+                        message.sentAt
+                    )
+                    .toLocaleTimeString(
+                        [],
+                        {
+                            hour:"2-digit",
+                            minute:"2-digit"
+                        }
+                    )
 
                     :
 
                     ""
 
                 }
+
+
+
+
+
+
+                {
+
+
+                    message.status
+
+                    &&
+
+
+                    ` ${message.status}`
+
+
+                }
+
 
 
             </small>
@@ -114,7 +129,6 @@ function MessageBubble({
 
 
 }
-
 
 
 export default MessageBubble;
