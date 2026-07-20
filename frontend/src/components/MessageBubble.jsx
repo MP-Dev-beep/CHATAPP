@@ -1,9 +1,3 @@
-import {
-    useUsers
-} from "../context/UserContext";
-
-
-
 function MessageBubble({
 
     message
@@ -12,18 +6,15 @@ function MessageBubble({
 
 
 
-    const {
-        user
-    } = useUsers();
-
-
-
-
-
     const myMessage =
 
-        user &&
-        message.senderId === user.id;
+        Number(message.senderId)
+
+        ===
+
+        Number(
+            localStorage.getItem("userId")
+        );
 
 
 
@@ -31,7 +22,6 @@ function MessageBubble({
 
 
     return (
-
 
 
         <div
@@ -53,6 +43,7 @@ function MessageBubble({
             }
 
 
+
         >
 
 
@@ -72,7 +63,6 @@ function MessageBubble({
             <small>
 
 
-
                 {
 
                     message.sentAt
@@ -83,12 +73,19 @@ function MessageBubble({
                         message.sentAt
                     )
                     .toLocaleTimeString(
+
                         [],
+
                         {
+
                             hour:"2-digit",
+
                             minute:"2-digit"
+
                         }
+
                     )
+
 
                     :
 
@@ -98,19 +95,17 @@ function MessageBubble({
 
 
 
-
-
-
                 {
 
+                    myMessage
 
-                    message.status
+                    ?
 
-                    &&
+                    " ENVOYÉ"
 
+                    :
 
-                    ` ${message.status}`
-
+                    " REÇU"
 
                 }
 
@@ -120,12 +115,12 @@ function MessageBubble({
 
 
 
+
+
         </div>
 
 
-
     );
-
 
 
 }

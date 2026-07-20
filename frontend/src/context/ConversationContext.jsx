@@ -23,16 +23,15 @@ import {
 
 
 
-const ConversationContext =
-    createContext(null);
+
+const ConversationContext = createContext(null);
 
 
 
 
 
-export function ConversationProvider({
-    children
-}) {
+
+export function ConversationProvider({children}) {
 
 
 
@@ -61,15 +60,20 @@ export function ConversationProvider({
 
 
 
-
     async function loadConversations(){
 
 
-        try {
+        try{
 
 
-            const data =
-                await getConversations();
+            const data = await getConversations();
+
+
+
+            console.log(
+                 "Conversations détaillées :",
+                  JSON.stringify(data, null, 2)
+            );
 
 
 
@@ -79,7 +83,8 @@ export function ConversationProvider({
 
 
 
-        } catch(error){
+        }
+        catch(error){
 
 
             console.error(
@@ -101,12 +106,10 @@ export function ConversationProvider({
 
 
 
-
     async function openConversation(id){
 
 
-        try {
-
+        try{
 
 
             setConversationId(id);
@@ -118,6 +121,7 @@ export function ConversationProvider({
 
 
             const oldMessages =
+
                 await getMessages(id);
 
 
@@ -133,13 +137,10 @@ export function ConversationProvider({
 
             connectWebSocket(
 
-
                 id,
 
 
-
                 (newMessage)=>{
-
 
 
                     setMessages(
@@ -158,26 +159,20 @@ export function ConversationProvider({
                     );
 
 
-
                 }
-
 
 
             );
 
 
 
-
-
-        } catch(error){
+        }
+        catch(error){
 
 
             console.error(
-
                 "Erreur ouverture conversation :",
-
                 error
-
             );
 
 
@@ -195,6 +190,10 @@ export function ConversationProvider({
 
 
     useEffect(()=>{
+
+
+        loadConversations();
+
 
 
         return ()=>{
@@ -215,35 +214,45 @@ export function ConversationProvider({
 
 
 
+
+
     return (
 
 
         <ConversationContext.Provider
 
 
-            value={{
+            value={
 
 
 
-                conversations,
-
-                loadConversations,
+                {
 
 
-                conversationId,
+                    conversations,
 
 
-                messages,
+                    loadConversations,
 
 
-                openConversation,
+                    conversationId,
 
 
-                setMessages
+                    messages,
+
+
+                    openConversation,
+
+
+                    setMessages
 
 
 
-            }}
+                }
+
+
+
+            }
 
 
 
@@ -259,7 +268,9 @@ export function ConversationProvider({
     );
 
 
+
 }
+
 
 
 
@@ -272,10 +283,10 @@ export function ConversationProvider({
 export function useConversation(){
 
 
-    const context =
-        useContext(
-            ConversationContext
-        );
+
+    const context = useContext(
+        ConversationContext
+    );
 
 
 
@@ -292,6 +303,7 @@ export function useConversation(){
 
 
     return context;
+
 
 
 }

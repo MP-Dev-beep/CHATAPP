@@ -27,9 +27,12 @@ function Sidebar(){
 
     const {
 
-        conversations = [],
+        conversations,
+
         loadConversations,
+
         openConversation
+
 
     } = useConversation();
 
@@ -37,13 +40,17 @@ function Sidebar(){
 
 
 
+
     const {
 
-        users = [],
-        fetchUsers
+        users,
+
+        fetchUsers,
+
+        user: currentUser
+
 
     } = useUsers();
-
 
 
 
@@ -55,7 +62,6 @@ function Sidebar(){
 
 
         loadConversations();
-
 
         fetchUsers();
 
@@ -70,52 +76,12 @@ function Sidebar(){
 
 
 
-    function getOtherUser(conversation){
-
-
-        const currentUserId =
-
-            Number(
-                localStorage.getItem("userId")
-            );
-
-
-
-        return conversation.users?.find(
-
-            user =>
-
-                user.id !== currentUserId
-
-        );
-
-
-    }
-
-
-
-
-
-
-
-
-
     function logout(){
 
 
-        localStorage.removeItem(
-            "token"
-        );
+        localStorage.removeItem("token");
 
-
-        localStorage.removeItem(
-            "userId"
-        );
-
-
-        localStorage.removeItem(
-            "firstname"
-        );
+        localStorage.removeItem("userId");
 
 
         window.location.reload();
@@ -131,48 +97,19 @@ function Sidebar(){
 
 
 
-    async function startConversation(userId){
-
-
-        try{
-
-
-            const response =
-
-                await createConversation(
-
-                    userId
-
-                );
+    function getOtherUser(conversation){
 
 
 
-            await loadConversations();
+        return conversation.users.find(
 
 
+            u =>
 
-            openConversation(
-
-                response.id
-
-            );
+            u.id !== currentUser?.id
 
 
-        }
-
-        catch(error){
-
-
-            console.error(
-
-                "Erreur création conversation :",
-
-                error
-
-            );
-
-
-        }
+        );
 
 
     }
@@ -185,24 +122,77 @@ function Sidebar(){
 
 
 
-    function isAlreadyInConversation(userId){
+    function hasConversation(userId){
+
 
 
         return conversations.some(
 
+
             conversation =>
 
 
-                conversation.users?.some(
+                conversation.users.some(
 
-                    user =>
-
-                        user.id === userId
+                    u => u.id === userId
 
                 )
 
 
         );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    async function startConversation(userId){
+
+
+
+        try {
+
+
+
+            const conversation =
+
+                await createConversation(userId);
+
+
+
+
+            await loadConversations();
+
+
+
+
+            openConversation(
+
+                conversation.id
+
+            );
+
+
+
+        } catch(error){
+
+
+            console.error(
+
+                "Erreur création conversation",
+
+                error
+
+            );
+
+
+        }
 
 
     }
@@ -225,11 +215,13 @@ function Sidebar(){
 
 
 
+
             <h2>
 
                 ChatApp
 
             </h2>
+
 
 
 
@@ -253,6 +245,8 @@ function Sidebar(){
 
 
 
+
+
             <h3>
 
                 Conversations
@@ -265,149 +259,119 @@ function Sidebar(){
 
 
 
+
+
             {
 
+            conversations.map(conversation=>{
 
-                conversations.length === 0 ?
 
+                const user =
 
-                (
+                    getOtherUser(conversation);
 
-                    <p>
 
-                        Aucune conversation
 
-                    </p>
 
+                return (
 
-                )
 
 
-                :
+                    <div
 
 
-                (
+                        className="contact"
 
 
-                    conversations.map(
+                        key={conversation.id}
 
-                        conversation => {
 
 
-                            const user =
+                        onClick={()=>
 
-                                getOtherUser(
 
-                                    conversation
+                            openConversation(
 
-                                );
+                                conversation.id
 
-
-
-                            return (
-
-
-                                <div
-
-
-                                    className="contact"
-
-
-                                    key={conversation.id}
-
-
-
-                                    onClick={()=>
-
-
-                                        openConversation(
-
-                                            conversation.id
-
-                                        )
-
-
-                                    }
-
-
-                                >
-
-
-
-                                    <div className="avatar">
-
-
-                                        {
-
-                                            user?.firstname
-
-                                            ?.charAt(0)
-
-                                        }
-
-
-                                    </div>
-
-
-
-
-
-                                    <div>
-
-
-                                        <strong>
-
-
-                                            {
-
-                                                user?.firstname
-
-                                            }
-
-
-                                            {" "}
-
-
-                                            {
-
-                                                user?.lastname
-
-                                            }
-
-
-                                        </strong>
-
-
-
-
-                                        <p>
-
-                                            Ouvrir la discussion
-
-                                        </p>
-
-
-
-                                    </div>
-
-
-
-                                </div>
-
-
-                            );
+                            )
 
 
                         }
 
 
-                    )
+
+                    >
 
 
-                )
 
+
+                        <div className="avatar">
+
+
+                            {
+                                user?.firstname
+                                ?.charAt(0)
+                            }
+
+
+                        </div>
+
+
+
+
+
+                        <div>
+
+
+                            <strong>
+
+
+                                {
+                                    user?.firstname
+                                }
+
+
+                                {" "}
+
+
+                                {
+                                    user?.lastname
+                                }
+
+
+                            </strong>
+
+
+
+                            <p>
+
+                                Ouvrir la discussion
+
+                            </p>
+
+
+
+                        </div>
+
+
+
+
+
+                    </div>
+
+
+
+                );
+
+
+
+            })
 
             }
+
+
+
 
 
 
@@ -434,153 +398,106 @@ function Sidebar(){
             {
 
 
-                users
+            users
 
-                .filter(user => {
+            .filter(
+
+                u =>
+
+                u.id !== currentUser?.id
+
+            )
+
+            .filter(
+
+                u =>
+
+                !hasConversation(u.id)
+
+            )
 
 
-                    const currentUserId =
-
-                        Number(
-
-                            localStorage.getItem("userId")
-
-                        );
-
-
-
-                    // Ne pas afficher l'utilisateur connecté
-
-                    if(user.id === currentUserId){
-
-                        return false;
-
-                    }
+            .map(user=>(
 
 
 
 
-                    // Ne pas afficher les personnes déjà en conversation
 
-                    if(
+                <div
 
-                        isAlreadyInConversation(
+
+                    className="contact"
+
+
+
+                    key={user.id}
+
+
+
+                    onClick={()=>
+
+
+                        startConversation(
 
                             user.id
 
                         )
 
-                    ){
-
-                        return false;
 
                     }
 
 
 
-
-                    return true;
-
-
-                })
+                >
 
 
 
-                .map(user => (
+
+                    <div className="avatar">
 
 
-
-                    <div
-
-
-                        className="contact"
-
-
-                        key={user.id}
-
-
-
-                        onClick={()=>
-
-
-                            startConversation(
-
-                                user.id
-
-                            )
-
-
+                        {
+                            user.firstname
+                            ?.charAt(0)
                         }
 
 
-                    >
+                    </div>
 
 
 
 
-                        <div className="avatar">
+
+
+
+                    <div>
+
+
+                        <strong>
 
 
                             {
-
                                 user.firstname
-
-                                ?.charAt(0)
-
                             }
 
 
-                        </div>
+                            {" "}
+
+
+                            {
+                                user.lastname
+                            }
+
+
+                        </strong>
 
 
 
+                        <p>
 
+                            Nouvelle conversation
 
-
-
-                        <div>
-
-
-
-                            <strong>
-
-
-                                {
-
-                                    user.firstname
-
-                                }
-
-
-                                {" "}
-
-
-                                {
-
-                                    user.lastname
-
-                                }
-
-
-
-                            </strong>
-
-
-
-
-
-                            <p>
-
-                                Nouvelle conversation
-
-                            </p>
-
-
-
-
-                        </div>
-
-
+                        </p>
 
 
 
@@ -588,8 +505,14 @@ function Sidebar(){
 
 
 
-                ))
 
+
+                </div>
+
+
+
+
+            ))
 
 
             }
@@ -602,6 +525,7 @@ function Sidebar(){
 
 
         </div>
+
 
 
     );

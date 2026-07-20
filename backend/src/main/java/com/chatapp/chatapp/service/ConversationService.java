@@ -6,6 +6,7 @@ import com.chatapp.chatapp.dto.CreateConversationRequest;
 import com.chatapp.chatapp.dto.UserResponse;
 
 import com.chatapp.chatapp.entity.Conversation;
+import com.chatapp.chatapp.entity.Message;
 import com.chatapp.chatapp.entity.User;
 
 import com.chatapp.chatapp.repository.ConversationRepository;
@@ -15,7 +16,9 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 
+
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 
@@ -31,26 +34,34 @@ public class ConversationService {
 
 
 
+
+
     public ConversationResponse createConversation(
             String email,
             CreateConversationRequest request
-    ) {
+    ){
 
 
         User currentUser =
+
                 userRepository.findByEmail(email)
+
                 .orElseThrow(() ->
                         new RuntimeException(
-                                "Utilisateur connecté introuvable"
+                                "Utilisateur introuvable"
                         )
                 );
 
 
 
-        User receiver =
+
+
+        User otherUser =
+
                 userRepository.findById(
                         request.getUserId()
                 )
+
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Destinataire introuvable"
@@ -59,14 +70,6 @@ public class ConversationService {
 
 
 
-        if(currentUser.getId()
-                .equals(receiver.getId())) {
-
-            throw new RuntimeException(
-                    "Impossible de discuter avec soi-même"
-            );
-
-        }
 
 
 
@@ -74,20 +77,25 @@ public class ConversationService {
         Conversation conversation =
 
                 conversationRepository
+
                 .findConversationBetweenUsers(
+
                         currentUser.getId(),
-                        receiver.getId()
+
+                        otherUser.getId()
+
                 )
 
                 .orElseGet(() -> {
 
 
                     Conversation newConversation =
+
                             Conversation.builder()
 
                             .user1(currentUser)
 
-                            .user2(receiver)
+                            .user2(otherUser)
 
                             .createdAt(
                                     LocalDateTime.now()
@@ -101,7 +109,10 @@ public class ConversationService {
                             newConversation
                     );
 
+
                 });
+
+
 
 
 
@@ -110,7 +121,12 @@ public class ConversationService {
                 conversation
         );
 
+
     }
+
+
+
+
 
 
 
@@ -118,10 +134,12 @@ public class ConversationService {
 
     public List<ConversationResponse> getUserConversations(
             String email
-    ) {
+    ){
+
 
 
         User user =
+
                 userRepository.findByEmail(email)
 
                 .orElseThrow(() ->
@@ -132,7 +150,11 @@ public class ConversationService {
 
 
 
+
+
+
         return conversationRepository
+
                 .findUserConversations(
                         user.getId()
                 )
@@ -143,7 +165,13 @@ public class ConversationService {
 
                 .toList();
 
+
+
     }
+
+
+
+
 
 
 
@@ -151,85 +179,156 @@ public class ConversationService {
 
     private ConversationResponse convertToResponse(
             Conversation conversation
-    ) {
+    ){
+
 
 
         UserResponse user1 =
-                UserResponse.builder()
 
-                .id(
+                convertUser(
                         conversation.getUser1()
-                        .getId()
-                )
-
-                .firstname(
-                        conversation.getUser1()
-                        .getFirstname()
-                )
-
-                .lastname(
-                        conversation.getUser1()
-                        .getLastname()
-                )
-
-                .email(
-                        conversation.getUser1()
-                        .getEmail()
-                )
-
-                .build();
-
+                );
 
 
 
         UserResponse user2 =
-                UserResponse.builder()
 
-                .id(
+                convertUser(
                         conversation.getUser2()
-                        .getId()
-                )
+                );
 
-                .firstname(
-                        conversation.getUser2()
-                        .getFirstname()
-                )
 
-                .lastname(
-                        conversation.getUser2()
-                        .getLastname()
-                )
 
-                .email(
-                        conversation.getUser2()
-                        .getEmail()
-                )
 
-                .build();
+
+
+        String lastMessage = null;
+
+        LocalDateTime lastTime = null;
+
+
+
+
+
+
+
+        if(conversation.getMessages()!=null &&
+
+                !conversation.getMessages().isEmpty()){
+
+
+
+            Message last =
+
+                    conversation.getMessages()
+
+                    .stream()
+
+                    .max(
+                            Comparator.comparing(
+                                    Message::getSentAt
+                            )
+                    )
+
+                    .get();
+
+
+
+
+            lastMessage =
+                    last.getContent();
+
+
+
+            lastTime =
+                    last.getSentAt();
+
+
+
+        }
+
+
+
+
 
 
 
 
         return ConversationResponse.builder()
 
+
                 .id(
                         conversation.getId()
                 )
+
 
                 .createdAt(
                         conversation.getCreatedAt()
                 )
 
+
                 .users(
+
                         List.of(
                                 user1,
                                 user2
                         )
+
+                )
+
+
+                .lastMessage(
+                        lastMessage
+                )
+
+
+                .lastMessageTime(
+                        lastTime
+                )
+
+
+                .build();
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    private UserResponse convertUser(
+            User user
+    ){
+
+
+        return UserResponse.builder()
+
+                .id(
+                        user.getId()
+                )
+
+                .firstname(
+                        user.getFirstname()
+                )
+
+                .lastname(
+                        user.getLastname()
+                )
+
+                .email(
+                        user.getEmail()
                 )
 
                 .build();
 
+
     }
+
 
 
 }
