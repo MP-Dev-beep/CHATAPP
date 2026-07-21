@@ -21,13 +21,15 @@ import {
 
 
 
+
+
 function Sidebar(){
 
 
 
     const {
 
-        conversations,
+        conversations = [],
 
         loadConversations,
 
@@ -41,16 +43,35 @@ function Sidebar(){
 
 
 
+
+
+
     const {
 
-        users,
+        users = [],
 
         fetchUsers,
 
-        user: currentUser
+        onlineUsers = []
 
 
     } = useUsers();
+
+
+
+
+
+
+
+
+
+    const currentUserId =
+
+        Number(
+            localStorage.getItem("userId")
+        );
+
+
 
 
 
@@ -66,6 +87,7 @@ function Sidebar(){
         fetchUsers();
 
 
+
     },[]);
 
 
@@ -79,9 +101,14 @@ function Sidebar(){
     function logout(){
 
 
-        localStorage.removeItem("token");
+        localStorage.removeItem(
+            "token"
+        );
 
-        localStorage.removeItem("userId");
+
+        localStorage.removeItem(
+            "userId"
+        );
 
 
         window.location.reload();
@@ -100,16 +127,91 @@ function Sidebar(){
     function getOtherUser(conversation){
 
 
+        if(!conversation?.users){
+
+            return null;
+
+        }
+
+
 
         return conversation.users.find(
 
 
-            u =>
+            user =>
 
-            u.id !== currentUser?.id
+                user.id !== currentUserId
 
 
         );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    function formatTime(date){
+
+
+        if(!date){
+
+            return "";
+
+        }
+
+
+
+        return new Date(date)
+
+            .toLocaleTimeString(
+
+                [],
+
+                {
+
+                    hour:"2-digit",
+
+                    minute:"2-digit"
+
+                }
+
+            );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    function isOnline(user){
+
+
+        if(!user){
+
+            return false;
+
+        }
+
+
+
+        return Array.isArray(onlineUsers)
+
+            &&
+
+            onlineUsers.includes(
+                user.email
+            );
 
 
     }
@@ -132,9 +234,13 @@ function Sidebar(){
             conversation =>
 
 
-                conversation.users.some(
+                conversation.users?.some(
 
-                    u => u.id === userId
+
+                    user =>
+
+                        user.id === userId
+
 
                 )
 
@@ -155,14 +261,20 @@ function Sidebar(){
     async function startConversation(userId){
 
 
-
-        try {
-
+        try{
 
 
-            const conversation =
+            const response =
 
-                await createConversation(userId);
+                await createConversation(
+
+                    {
+
+                        userId
+
+                    }
+
+                );
 
 
 
@@ -174,13 +286,16 @@ function Sidebar(){
 
             openConversation(
 
-                conversation.id
+                response.id
 
             );
 
 
 
-        } catch(error){
+        }
+
+        catch(error){
+
 
 
             console.error(
@@ -195,7 +310,77 @@ function Sidebar(){
         }
 
 
+
     }
+
+
+
+
+
+
+
+
+
+    const sortedConversations =
+
+        [...conversations].sort(
+
+            (a,b)=>
+
+
+                new Date(
+
+                    b.lastMessageTime
+
+                    ||
+
+                    b.createdAt
+
+                )
+
+                -
+
+                new Date(
+
+                    a.lastMessageTime
+
+                    ||
+
+                    a.createdAt
+
+                )
+
+        );
+
+
+
+
+
+
+
+
+
+    const newContacts =
+
+
+        users.filter(
+
+
+            user =>
+
+
+                user.id !== currentUserId
+
+                &&
+
+                !hasConversation(
+
+                    user.id
+
+                )
+
+
+        );
 
 
 
@@ -210,6 +395,7 @@ function Sidebar(){
 
 
         <div className="sidebar">
+
 
 
 
@@ -246,7 +432,6 @@ function Sidebar(){
 
 
 
-
             <h3>
 
                 Conversations
@@ -263,129 +448,215 @@ function Sidebar(){
 
             {
 
-            conversations.map(conversation=>{
+                sortedConversations.map(
 
 
-                const user =
-
-                    getOtherUser(conversation);
-
+                    conversation => {
 
 
 
-                return (
+                        const user =
 
+                            getOtherUser(
 
+                                conversation
 
-                    <div
-
-
-                        className="contact"
-
-
-                        key={conversation.id}
-
-
-
-                        onClick={()=>
-
-
-                            openConversation(
-
-                                conversation.id
-
-                            )
-
-
-                        }
-
-
-
-                    >
+                            );
 
 
 
 
-                        <div className="avatar">
-
-
-                            {
-                                user?.firstname
-                                ?.charAt(0)
-                            }
-
-
-                        </div>
+                        return (
 
 
 
+                            <div
 
 
-                        <div>
+                                className="contact"
 
 
-                            <strong>
-
-
-                                {
-                                    user?.firstname
+                                key={
+                                    conversation.id
                                 }
 
 
-                                {" "}
+
+                                onClick={()=>
 
 
-                                {
-                                    user?.lastname
+                                    openConversation(
+
+                                        conversation.id
+
+                                    )
+
+
                                 }
 
 
-                            </strong>
 
-
-
-                            <p>
-
-                                Ouvrir la discussion
-
-                            </p>
-
-
-
-                        </div>
+                            >
 
 
 
 
 
-                    </div>
+                                <div className="avatar">
+
+
+                                    {
+
+                                        user?.firstname
+
+                                        ?.charAt(0)
+
+                                    }
+
+
+                                </div>
 
 
 
-                );
 
 
 
-            })
+
+
+                                <div>
+
+
+
+                                    <strong>
+
+
+                                        {
+
+                                            user?.firstname
+
+                                        }
+
+
+                                        {" "}
+
+
+                                        {
+
+                                            user?.lastname
+
+                                        }
+
+
+
+                                    </strong>
+
+
+
+
+
+
+                                    <span>
+
+
+                                        {
+
+                                            isOnline(user)
+
+                                            ?
+
+                                            " 🟢"
+
+                                            :
+
+                                            " ⚫"
+
+                                        }
+
+
+
+                                    </span>
+
+
+
+
+
+
+
+
+
+                                    <p>
+
+
+                                        {
+
+                                            conversation.lastMessage
+
+                                            ||
+
+                                            "Nouvelle discussion"
+
+
+                                        }
+
+
+
+                                    </p>
+
+
+
+
+
+
+
+
+
+                                    <small>
+
+
+                                        {
+
+                                            formatTime(
+
+                                                conversation.lastMessageTime
+
+                                            )
+
+                                        }
+
+
+
+                                    </small>
+
+
+
+
+
+                                </div>
+
+
+
+
+
+
+
+                            </div>
+
+
+
+                        );
+
+
+                    }
+
+
+                )
+
 
             }
 
 
 
 
-
-
-
-
-
-
-
-
-            <h3>
-
-                Nouveaux contacts
-
-            </h3>
 
 
 
@@ -397,49 +668,173 @@ function Sidebar(){
 
             {
 
-
-            users
-
-            .filter(
-
-                u =>
-
-                u.id !== currentUser?.id
-
-            )
-
-            .filter(
-
-                u =>
-
-                !hasConversation(u.id)
-
-            )
+                newContacts.length > 0 &&
 
 
-            .map(user=>(
+
+                <>
+
+
+
+                    <h3>
+
+                        Nouveaux contacts
+
+                    </h3>
 
 
 
 
 
-                <div
-
-
-                    className="contact"
 
 
 
-                    key={user.id}
+
+                    {
+
+                        newContacts.map(
+
+
+                            user => (
 
 
 
-                    onClick={()=>
+                                <div
 
 
-                        startConversation(
+                                    className="contact"
 
-                            user.id
+
+                                    key={
+                                        user.id
+                                    }
+
+
+
+                                    onClick={()=>
+
+
+                                        startConversation(
+
+                                            user.id
+
+                                        )
+
+
+                                    }
+
+
+
+                                >
+
+
+
+
+
+                                    <div className="avatar">
+
+
+                                        {
+
+                                            user.firstname
+
+                                            ?.charAt(0)
+
+                                        }
+
+
+                                    </div>
+
+
+
+
+
+
+
+
+                                    <div>
+
+
+
+
+                                        <strong>
+
+
+                                            {
+
+                                                user.firstname
+
+                                            }
+
+
+                                            {" "}
+
+
+                                            {
+
+                                                user.lastname
+
+                                            }
+
+
+
+                                        </strong>
+
+
+
+
+
+
+                                        <span>
+
+
+                                            {
+
+                                                isOnline(user)
+
+                                                ?
+
+                                                " 🟢"
+
+                                                :
+
+                                                " ⚫"
+
+
+                                            }
+
+
+
+                                        </span>
+
+
+
+
+
+
+                                        <p>
+
+                                            Nouvelle conversation
+
+                                        </p>
+
+
+
+
+
+
+                                    </div>
+
+
+
+
+
+                                </div>
+
+
+
+                            )
+
 
                         )
 
@@ -448,76 +843,10 @@ function Sidebar(){
 
 
 
-                >
-
-
-
-
-                    <div className="avatar">
-
-
-                        {
-                            user.firstname
-                            ?.charAt(0)
-                        }
-
-
-                    </div>
-
-
-
-
-
-
-
-                    <div>
-
-
-                        <strong>
-
-
-                            {
-                                user.firstname
-                            }
-
-
-                            {" "}
-
-
-                            {
-                                user.lastname
-                            }
-
-
-                        </strong>
-
-
-
-                        <p>
-
-                            Nouvelle conversation
-
-                        </p>
-
-
-
-                    </div>
-
-
-
-
-
-                </div>
-
-
-
-
-            ))
+                </>
 
 
             }
-
-
 
 
 

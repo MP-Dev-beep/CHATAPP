@@ -1,11 +1,13 @@
 import axios from "axios";
 
 
-
 const api = axios.create({
 
-    baseURL:
-    "http://localhost:8081"
+    baseURL: "http://localhost:8081/api",
+
+    headers:{
+        "Content-Type":"application/json"
+    }
 
 });
 
@@ -22,23 +24,19 @@ api.interceptors.request.use(
         localStorage.getItem("token");
 
 
-
     console.log(
-        "JWT envoyé :",
-        token
+        "JWT présent :",
+        !!token
     );
 
 
 
     if(token){
 
-
         config.headers.Authorization =
-        `Bearer ${token}`;
-
+            `Bearer ${token}`;
 
     }
-
 
 
     return config;
@@ -46,17 +44,15 @@ api.interceptors.request.use(
 
 },
 
-
 (error)=>{
-
 
     return Promise.reject(error);
 
-
 }
 
-
 );
+
+
 
 
 

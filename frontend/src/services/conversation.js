@@ -4,39 +4,33 @@ import api from "./api";
 
 export async function getConversations(){
 
+    const response = await api.get(
 
-    const response =
-        await api.get(
-            "/api/conversations"
-        );
+        "/conversations"
 
+    );
 
     return response.data;
-
 
 }
 
 
 
 
-
-
 export async function createConversation(userId){
 
+    const response = await api.post(
 
-    const response =
-        await api.post(
+        "/conversations",
 
-            "/api/conversations",
+        {
 
-            {
-                userId:userId
-            }
+            userId
 
-        );
+        }
 
+    );
 
     return response.data;
-
 
 }

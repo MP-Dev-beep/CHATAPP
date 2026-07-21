@@ -1,64 +1,47 @@
 import SockJS from "sockjs-client";
-import { Client } from "@stomp/stompjs";
+import {
+    Client
+} from "@stomp/stompjs";
+
 
 
 let stompClient = null;
 
+
 let currentSubscription = null;
+
+
+let statusSubscription = null;
+
+
+
+
+let pendingDelivered = [];
+
+
+let pendingRead = [];
+
+
 
 
 
 
 export function connectWebSocket(
     conversationId,
-    onMessageReceived
+    currentUserId,
+    onMessageReceived,
+    onStatusReceived
 ){
 
 
-
-    if(stompClient && stompClient.connected){
-
-
-        if(currentSubscription){
-
-            currentSubscription.unsubscribe();
-
-        }
+    const token =
+        localStorage.getItem("token");
 
 
 
-        currentSubscription =
-            stompClient.subscribe(
+    if(stompClient){
 
-
-                `/topic/conversation/${conversationId}`,
-
-
-                message => {
-
-
-                    const data =
-                        JSON.parse(
-                            message.body
-                        );
-
-
-                    console.log(
-                        "Message reçu :",
-                        data
-                    );
-
-
-                    onMessageReceived(data);
-
-
-                }
-
-
-            );
-
-
-        return;
+        disconnectWebSocket();
 
     }
 
@@ -67,157 +50,167 @@ export function connectWebSocket(
 
 
 
-    const token =
-        localStorage.getItem("token");
+    stompClient = new Client({
 
 
+        webSocketFactory:()=>
 
 
+            new SockJS(
+                "http://localhost:8081/ws"
+            ),
 
-    stompClient =
-        new Client({
 
 
+        connectHeaders:{
 
-            webSocketFactory:()=>
 
+            Authorization:
+            `Bearer ${token}`
 
-                new SockJS(
-                    "http://localhost:8081/ws"
-                ),
 
+        },
 
 
 
+        reconnectDelay:5000,
 
-            connectHeaders:{
 
 
-                Authorization:
-                `Bearer ${token}`
 
 
-            },
+        onConnect:()=>{
 
 
+            console.log(
+                "STOMP CONNECTED"
+            );
 
 
 
 
-            reconnectDelay:5000,
 
+            currentSubscription =
 
+            stompClient.subscribe(
 
 
+                `/topic/conversation/${conversationId}`,
 
-            debug:(message)=>{
 
+                message=>{
 
-                console.log(
-                    message
-                );
 
+                    const data =
+                    JSON.parse(
+                        message.body
+                    );
 
-            },
 
 
+                    console.log(
+                        "MESSAGE RECU",
+                        data
+                    );
 
 
 
+                    onMessageReceived(
+                        data
+                    );
 
 
-            onConnect:()=>{
+                }
 
 
-                console.log(
-                    "STOMP connecté"
-                );
+            );
 
 
 
 
 
 
-                currentSubscription =
 
-                stompClient.subscribe(
+            statusSubscription =
 
+            stompClient.subscribe(
 
-                    `/topic/conversation/${conversationId}`,
 
+                `/topic/message-status/${currentUserId}`,
 
 
-                    message=>{
+                message=>{
 
 
-                        const data =
+                    const data =
+                    JSON.parse(
+                        message.body
+                    );
 
-                            JSON.parse(
-                                message.body
-                            );
 
 
+                    console.log(
+                        "STATUS RECU",
+                        data
+                    );
 
 
-                        console.log(
-                            "Message reçu :",
-                            data
-                        );
 
+                    onStatusReceived(
+                        data
+                    );
 
 
-                        onMessageReceived(
-                            data
-                        );
+                }
 
 
-                    }
+            );
 
 
-                );
 
 
 
-            },
 
+            /*
+              Envoi des statuts bloqués
+            */
 
 
+            pendingDelivered.forEach(id=>{
 
 
+                sendDeliveredNow(id);
 
 
-            onStompError:(frame)=>{
+            });
 
 
-                console.error(
-                    "Erreur STOMP :",
-                    frame
-                );
 
+            pendingDelivered=[];
 
-            },
 
 
 
 
+            pendingRead.forEach(id=>{
 
-            onWebSocketError:(error)=>{
 
+                sendReadNow(id);
 
-                console.error(
-                    "Erreur WebSocket :",
-                    error
-                );
 
+            });
 
-            }
 
 
+            pendingRead=[];
 
-        });
 
 
+        }
 
+
+
+    });
 
 
 
@@ -242,36 +235,18 @@ export function sendMessage(
 ){
 
 
-
     if(
         !stompClient ||
         !stompClient.connected
     ){
 
-
         console.log(
-            "STOMP non connecté"
+            "STOMP pas connecté"
         );
-
 
         return;
 
-
     }
-
-
-
-
-
-
-    const token =
-
-        localStorage.getItem(
-            "token"
-        );
-
-
-
 
 
 
@@ -279,58 +254,26 @@ export function sendMessage(
     stompClient.publish({
 
 
-
         destination:
-
-            "/app/chat.send",
-
-
-
-
-
-        headers:{
-
-
-            Authorization:
-
-            `Bearer ${token}`
-
-
-        },
-
-
-
+        "/app/chat.send",
 
 
 
         body:
+        JSON.stringify({
 
 
-            JSON.stringify({
+            conversationId,
 
 
-
-                conversationId,
-
-
-                content
+            content
 
 
-
-            })
+        })
 
 
 
     });
-
-
-
-
-
-
-    console.log(
-        "Message envoyé avec JWT"
-    );
 
 
 
@@ -345,24 +288,202 @@ export function sendMessage(
 
 
 
+export function sendDelivered(
+    messageId
+){
+
+
+
+    if(
+        !stompClient ||
+        !stompClient.connected
+    ){
+
+
+        console.log(
+            "Delivered en attente",
+            messageId
+        );
+
+
+        pendingDelivered.push(
+            messageId
+        );
+
+
+        return;
+
+    }
+
+
+
+    sendDeliveredNow(
+        messageId
+    );
+
+
+
+}
+
+
+
+
+
+
+
+function sendDeliveredNow(
+    messageId
+){
+
+
+
+    stompClient.publish({
+
+
+        destination:
+        "/app/message.delivered",
+
+
+
+        body:
+        JSON.stringify({
+
+
+            messageId
+
+
+        })
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+export function sendRead(
+    messageId
+){
+
+
+
+    if(
+        !stompClient ||
+        !stompClient.connected
+    ){
+
+
+
+        console.log(
+            "Read en attente",
+            messageId
+        );
+
+
+
+        pendingRead.push(
+            messageId
+        );
+
+
+        return;
+
+    }
+
+
+
+    sendReadNow(
+        messageId
+    );
+
+
+}
+
+
+
+
+
+
+
+
+function sendReadNow(
+    messageId
+){
+
+
+
+    stompClient.publish({
+
+
+        destination:
+        "/app/message.read",
+
+
+
+        body:
+        JSON.stringify({
+
+
+            messageId
+
+
+        })
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
 
 export function disconnectWebSocket(){
 
+
+
+    pendingDelivered=[];
+
+    pendingRead=[];
 
 
 
 
     if(currentSubscription){
 
-
         currentSubscription.unsubscribe();
 
-
-        currentSubscription = null;
-
+        currentSubscription=null;
 
     }
 
+
+
+
+
+    if(statusSubscription){
+
+        statusSubscription.unsubscribe();
+
+        statusSubscription=null;
+
+    }
 
 
 
@@ -374,7 +495,7 @@ export function disconnectWebSocket(){
         stompClient.deactivate();
 
 
-        stompClient = null;
+        stompClient=null;
 
 
     }

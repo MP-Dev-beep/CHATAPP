@@ -19,7 +19,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin("*")
+@CrossOrigin(
+        origins = "http://localhost:5173",
+        allowCredentials = "true"
+)
 public class UserController {
 
 
@@ -29,9 +32,10 @@ public class UserController {
 
 
 
-    // ==========================
+    // =====================================
     // UTILISATEUR CONNECTE
-    // ==========================
+    // GET /api/users/me
+    // =====================================
 
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentUser(
@@ -42,20 +46,33 @@ public class UserController {
         String email = authentication.getName();
 
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Utilisateur introuvable"
+        User user =
+                userRepository.findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Utilisateur introuvable"
+                                )
+                        );
+
+
+        UserResponse response =
+                UserResponse.builder()
+
+                        .id(user.getId())
+
+                        .firstname(
+                                user.getFirstname()
                         )
-                );
 
+                        .lastname(
+                                user.getLastname()
+                        )
 
-        UserResponse response = UserResponse.builder()
-                .id(user.getId())
-                .firstname(user.getFirstname())
-                .lastname(user.getLastname())
-                .email(user.getEmail())
-                .build();
+                        .email(
+                                user.getEmail()
+                        )
+
+                        .build();
 
 
         return ResponseEntity.ok(response);
@@ -65,12 +82,14 @@ public class UserController {
 
 
 
-    // ==========================
-    // LISTE DES UTILISATEURS
-    // ==========================
+
+    // =====================================
+    // TOUS LES UTILISATEURS
+    // GET /api/users
+    // =====================================
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getUsers() {
+    public ResponseEntity<List<UserResponse>> getUsers(){
 
 
         return ResponseEntity.ok(
@@ -82,14 +101,16 @@ public class UserController {
 
 
 
-    // ==========================
-    // RECHERCHE UTILISATEUR
-    // ==========================
+
+    // =====================================
+    // RECHERCHE
+    // GET /api/users/search?keyword=
+    // =====================================
 
     @GetMapping("/search")
     public ResponseEntity<List<UserResponse>> searchUsers(
             @RequestParam String keyword
-    ) {
+    ){
 
 
         return ResponseEntity.ok(
@@ -101,18 +122,21 @@ public class UserController {
 
 
 
-    // ==========================
-    // MODIFICATION PROFIL
-    // ==========================
+
+    // =====================================
+    // MODIFIER PROFIL
+    // PUT /api/users/profile
+    // =====================================
 
     @PutMapping("/profile")
     public ResponseEntity<UserResponse> updateProfile(
             Authentication authentication,
             @RequestBody UpdateProfileRequest request
-    ) {
+    ){
 
 
-        String email = authentication.getName();
+        String email =
+                authentication.getName();
 
 
         return ResponseEntity.ok(

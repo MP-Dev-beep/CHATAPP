@@ -3,6 +3,7 @@ package com.chatapp.chatapp.controller;
 
 import com.chatapp.chatapp.dto.MessageRequest;
 import com.chatapp.chatapp.dto.MessageResponse;
+import com.chatapp.chatapp.dto.MessageStatusRequest;
 import com.chatapp.chatapp.service.MessageService;
 
 
@@ -10,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 
 
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import org.springframework.stereotype.Controller;
@@ -20,9 +20,12 @@ import java.security.Principal;
 
 
 
+
+
 @Controller
 @RequiredArgsConstructor
 public class ChatController {
+
 
 
 
@@ -30,6 +33,7 @@ public class ChatController {
 
 
     private final SimpMessagingTemplate messagingTemplate;
+
 
 
 
@@ -44,18 +48,10 @@ public class ChatController {
 
 
 
-        System.out.println(
-            "Utilisateur WebSocket : "
-            +
-            principal
-        );
-
-
-
         if(principal == null){
 
             System.out.println(
-                "Aucun utilisateur connecté"
+                "USER NULL"
             );
 
             return;
@@ -65,27 +61,165 @@ public class ChatController {
 
 
 
+
         MessageResponse response =
+
                 messageService.sendMessage(
+
                         principal.getName(),
+
                         request
+
                 );
+
+
+
+
+
+
+        System.out.println(
+            "MESSAGE SEND : "
+            +
+            response.getId()
+        );
+
+
+
 
 
 
 
         messagingTemplate.convertAndSend(
 
+
                 "/topic/conversation/"
                 +
                 request.getConversationId(),
 
+
                 response
+
 
         );
 
 
+
     }
+
+
+
+
+
+
+
+
+
+    @MessageMapping("/message.delivered")
+    public void delivered(
+            MessageStatusRequest request
+    ){
+
+
+
+        System.out.println(
+            "MESSAGE DELIVERED : "
+            +
+            request.getMessageId()
+        );
+
+
+
+
+
+
+        MessageResponse response =
+
+                messageService.markAsDelivered(
+
+                        request.getMessageId()
+
+                );
+
+
+
+
+
+
+        messagingTemplate.convertAndSend(
+
+
+                "/topic/message-status/"
+                +
+                response.getSenderId(),
+
+
+                response
+
+
+        );
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    @MessageMapping("/message.read")
+    public void read(
+            MessageStatusRequest request
+    ){
+
+
+
+        System.out.println(
+            "MESSAGE READ : "
+            +
+            request.getMessageId()
+        );
+
+
+
+
+
+
+
+        MessageResponse response =
+
+                messageService.markAsRead(
+
+                        request.getMessageId()
+
+                );
+
+
+
+
+
+
+
+        messagingTemplate.convertAndSend(
+
+
+                "/topic/message-status/"
+                +
+                response.getSenderId(),
+
+
+                response
+
+
+        );
+
+
+
+    }
+
 
 
 

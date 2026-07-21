@@ -21,7 +21,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/messages")
 @RequiredArgsConstructor
-@CrossOrigin("*")
+@CrossOrigin(
+        origins = "http://localhost:5173",
+        allowCredentials = "true"
+)
 public class MessageController {
 
 
@@ -32,11 +35,13 @@ public class MessageController {
 
 
 
+    // ENVOYER MESSAGE
+
     @PostMapping
     public ResponseEntity<MessageResponse> sendMessage(
             Authentication authentication,
             @RequestBody MessageRequest request
-    ) {
+    ){
 
 
         return ResponseEntity.ok(
@@ -51,7 +56,6 @@ public class MessageController {
 
         );
 
-
     }
 
 
@@ -59,10 +63,13 @@ public class MessageController {
 
 
 
+
+    // RECUPERER LES MESSAGES
+
     @GetMapping("/conversation/{id}")
     public ResponseEntity<List<MessageResponse>> getMessages(
             @PathVariable Long id
-    ) {
+    ){
 
 
         return ResponseEntity.ok(
@@ -71,8 +78,32 @@ public class MessageController {
 
         );
 
+    }
+
+
+
+
+
+
+
+
+    // MARQUER UNE CONVERSATION COMME LUE
+
+    @PutMapping("/read/{conversationId}")
+    public ResponseEntity<Void> markConversationRead(
+            @PathVariable Long conversationId
+    ){
+
+
+        messageService.markConversationAsRead(
+                conversationId
+        );
+
+
+        return ResponseEntity.ok().build();
 
     }
+
 
 
 }

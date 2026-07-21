@@ -3,10 +3,13 @@ package com.chatapp.chatapp.security;
 
 import com.chatapp.chatapp.service.JwtService;
 
+
 import lombok.RequiredArgsConstructor;
+
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 
@@ -21,9 +24,11 @@ import java.util.Map;
 
 
 
+
 @Component
 @RequiredArgsConstructor
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
+
 
 
 
@@ -33,105 +38,138 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
+
+
     @Override
     public Message<?> preSend(
+
             Message<?> message,
+
             MessageChannel channel
+
     ){
 
 
 
         StompHeaderAccessor accessor =
+
                 StompHeaderAccessor.wrap(message);
 
 
 
+
+
+
+
         System.out.println(
+
                 "STOMP COMMAND : "
-                + accessor.getCommand()
+
+                +
+
+                accessor.getCommand()
+
         );
 
 
 
 
 
-        /*
-         * CONNEXION WEBSOCKET
-         */
+
+
+
+
+        // ===========================
+        // CONNEXION
+        // ===========================
+
+
         if(
-            StompCommand.CONNECT.equals(
-                accessor.getCommand()
-            )
+                StompCommand.CONNECT.equals(
+                        accessor.getCommand()
+                )
         ){
 
 
+
             String auth =
+
                     accessor.getFirstNativeHeader(
+
                             "Authorization"
+
                     );
 
-
-
-            System.out.println(
-                    "HEADER AUTH : "
-                    + auth
-            );
 
 
 
 
             if(
-                auth != null &&
-                auth.startsWith("Bearer ")
+
+                    auth != null &&
+
+                    auth.startsWith("Bearer ")
+
             ){
 
 
+
                 String token =
+
                         auth.substring(7);
 
 
 
 
+
                 String email =
+
                         jwtService.extractEmail(
+
                                 token
+
                         );
 
 
 
 
 
-                Principal principal =
-                        new Principal(){
 
 
-                            @Override
-                            public String getName(){
 
-                                return email;
+                Principal principal = () -> email;
 
-                            }
-
-                        };
 
 
 
 
 
                 accessor.setUser(
+
                         principal
+
                 );
+
+
+
 
 
 
 
                 System.out.println(
-                        "Utilisateur WebSocket connecté : "
-                        + email
+
+                        "WEBSOCKET USER : "
+
+                        +
+
+                        email
+
                 );
 
 
+
             }
+
 
 
         }
@@ -141,59 +179,59 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
-        /*
-         * MESSAGE SEND
-         */
+
+
+
+        // ===========================
+        // RESTAURATION SESSION
+        // ===========================
+
+
         if(
-            StompCommand.SEND.equals(
-                    accessor.getCommand()
-            )
+
+                accessor.getUser() == null
+
         ){
 
 
 
-            Principal principal =
-                    accessor.getUser();
+            Map<String,Object> attributes =
+
+                    accessor.getSessionAttributes();
 
 
 
 
-            System.out.println(
-                    "Principal SEND : "
-                    + principal
-            );
+
+            if(attributes != null){
 
 
 
-
-            if(principal == null){
-
-
-                Map<String,Object> attributes =
-                        accessor.getSessionAttributes();
+                Principal principal =
 
 
+                        (Principal)
 
-                if(attributes != null){
+                        attributes.get(
 
+                                "principal"
 
-                    Principal saved =
-                            (Principal)
-                            attributes.get(
-                                    "principal"
-                            );
-
-
-
-                    if(saved != null){
-
-
-                        accessor.setUser(
-                                saved
                         );
 
 
-                    }
+
+
+
+                if(principal != null){
+
+
+
+                    accessor.setUser(
+
+                            principal
+
+                    );
+
 
 
                 }
@@ -210,30 +248,46 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
-        /*
-         * Sauvegarde session
-         */
+
+
+
+        // ===========================
+        // SAUVEGARDE SESSION
+        // ===========================
+
+
         if(
-            accessor.getUser()!=null
+
+                accessor.getUser() != null
+
         ){
 
 
 
             Map<String,Object> attributes =
+
                     accessor.getSessionAttributes();
+
+
 
 
 
             if(attributes != null){
 
 
+
                 attributes.put(
+
                         "principal",
+
                         accessor.getUser()
+
                 );
 
 
+
             }
+
 
 
         }
@@ -242,10 +296,18 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
+
+
+
+
         return MessageBuilder.createMessage(
+
                 message.getPayload(),
+
                 accessor.getMessageHeaders()
+
         );
+
 
 
     }

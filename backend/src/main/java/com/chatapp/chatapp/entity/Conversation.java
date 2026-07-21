@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
 @Entity
 @Table(name = "conversations")
 @Getter
@@ -19,16 +20,16 @@ import java.util.List;
 public class Conversation {
 
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
 
 
-    /**
-     * Premier utilisateur de la conversation
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
+
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "user1_id",
             nullable = false
@@ -37,10 +38,9 @@ public class Conversation {
 
 
 
-    /**
-     * Deuxième utilisateur de la conversation
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
+
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "user2_id",
             nullable = false
@@ -49,30 +49,35 @@ public class Conversation {
 
 
 
-    /**
-     * Date création conversation
-     */
+
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
 
 
-    /**
-     * Messages liés
-     */
+
+
+
+
     @OneToMany(
             mappedBy = "conversation",
             cascade = CascadeType.ALL,
-            orphanRemoval = true
+            orphanRemoval = true,
+            fetch = FetchType.EAGER
     )
     @Builder.Default
-    private List<Message> messages =
-            new ArrayList<>();
+    private List<Message> messages = new ArrayList<>();
+
+
+
+
 
 
 
     @PrePersist
     public void beforeSave(){
+
 
         if(createdAt == null){
 
@@ -80,6 +85,8 @@ public class Conversation {
 
         }
 
+
     }
+
 
 }

@@ -3,17 +3,20 @@ package com.chatapp.chatapp.service;
 
 import com.chatapp.chatapp.dto.MessageRequest;
 import com.chatapp.chatapp.dto.MessageResponse;
-import com.chatapp.chatapp.entity.Conversation;
 import com.chatapp.chatapp.entity.Message;
 import com.chatapp.chatapp.entity.User;
-import com.chatapp.chatapp.repository.ConversationRepository;
+import com.chatapp.chatapp.entity.Conversation;
+
 import com.chatapp.chatapp.repository.MessageRepository;
 import com.chatapp.chatapp.repository.UserRepository;
+import com.chatapp.chatapp.repository.ConversationRepository;
 
 
 import lombok.RequiredArgsConstructor;
 
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.LocalDateTime;
@@ -24,33 +27,44 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class MessageService {
 
 
 
     private final MessageRepository messageRepository;
 
-    private final ConversationRepository conversationRepository;
-
     private final UserRepository userRepository;
 
+    private final ConversationRepository conversationRepository;
 
 
 
 
-    // ==========================
-    // ENVOYER UN MESSAGE
-    // ==========================
+
+
+
+
+    /*
+     *
+     * CREATION MESSAGE
+     *
+     * Etat initial :
+     *
+     * ✓ envoyé
+     *
+     */
 
     public MessageResponse sendMessage(
             String email,
             MessageRequest request
-    ) {
+    ){
 
 
 
-        User sender = userRepository
-                .findByEmail(email)
+        User sender =
+
+                userRepository.findByEmail(email)
 
                 .orElseThrow(() ->
                         new RuntimeException(
@@ -63,8 +77,8 @@ public class MessageService {
 
 
         Conversation conversation =
-                conversationRepository
-                .findById(
+
+                conversationRepository.findById(
                         request.getConversationId()
                 )
 
@@ -79,21 +93,26 @@ public class MessageService {
 
 
 
-        Message message = Message.builder()
+
+        Message message =
+
+                Message.builder()
 
                 .content(
                         request.getContent()
                 )
 
+                .sender(sender)
+
+                .conversation(conversation)
+
                 .sentAt(
                         LocalDateTime.now()
                 )
 
+                .delivered(false)
+
                 .read(false)
-
-                .sender(sender)
-
-                .conversation(conversation)
 
                 .build();
 
@@ -103,17 +122,18 @@ public class MessageService {
 
 
 
-        Message savedMessage =
-                messageRepository.save(message);
+        Message saved =
+
+                messageRepository.save(
+                        message
+                );
 
 
 
 
 
+        return convert(saved);
 
-        return convertToResponse(
-                savedMessage
-        );
 
 
     }
@@ -125,15 +145,20 @@ public class MessageService {
 
 
 
-    // ==========================
-    // RECUPERER MESSAGES CONVERSATION
-    // ==========================
 
+
+
+
+
+    /*
+     *
+     * HISTORIQUE
+     *
+     */
 
     public List<MessageResponse> getMessages(
             Long conversationId
     ){
-
 
 
         return messageRepository
@@ -144,7 +169,7 @@ public class MessageService {
 
                 .stream()
 
-                .map(this::convertToResponse)
+                .map(this::convert)
 
                 .collect(Collectors.toList());
 
@@ -159,62 +184,360 @@ public class MessageService {
 
 
 
-    // ==========================
-    // CONVERSION ENTITY -> DTO
-    // ==========================
 
 
-    private MessageResponse convertToResponse(
+
+    /*
+     *
+     * DESTINATAIRE A RECU
+     *
+     * ✓✓ GRIS
+     *
+     */
+
+    public MessageResponse markAsDelivered(
+            Long id
+    ){
+
+
+
+        Message message =
+
+                messageRepository.findById(id)
+
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Message introuvable"
+                        )
+                );
+
+
+
+
+
+        if(!message.isDelivered()){
+
+
+            message.setDelivered(true);
+
+
+
+            message.setDeliveredAt(
+                    LocalDateTime.now()
+            );
+
+
+        }
+
+
+
+
+
+
+
+        Message saved =
+
+                messageRepository.save(
+                        message
+                );
+
+
+
+
+
+        return convert(saved);
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+     *
+     * DESTINATAIRE A LU
+     *
+     * ✓✓ BLEU
+     *
+     */
+
+    public MessageResponse markAsRead(
+            Long id
+    ){
+
+
+
+        Message message =
+
+                messageRepository.findById(id)
+
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Message introuvable"
+                        )
+                );
+
+
+
+
+
+
+
+        message.setDelivered(true);
+
+        message.setRead(true);
+
+
+
+
+
+
+        if(message.getDeliveredAt()==null){
+
+
+            message.setDeliveredAt(
+                    LocalDateTime.now()
+            );
+
+
+        }
+
+
+
+
+
+
+
+
+        if(message.getReadAt()==null){
+
+
+            message.setReadAt(
+                    LocalDateTime.now()
+            );
+
+
+        }
+
+
+
+
+
+
+
+
+
+        Message saved =
+
+                messageRepository.save(
+                        message
+                );
+
+
+
+
+
+
+
+        return convert(saved);
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+     *
+     * OUVERTURE CONVERSATION
+     *
+     * Tous les messages deviennent lus
+     *
+     */
+
+    public void markConversationAsRead(
+            Long conversationId
+    ){
+
+
+
+        List<Message> messages =
+
+                messageRepository.findByConversationId(
+                        conversationId
+                );
+
+
+
+
+
+
+
+        messages.forEach(message -> {
+
+
+
+            if(!message.isRead()){
+
+
+                message.setDelivered(true);
+
+                message.setRead(true);
+
+
+
+
+
+                if(message.getDeliveredAt()==null){
+
+
+                    message.setDeliveredAt(
+                            LocalDateTime.now()
+                    );
+
+
+                }
+
+
+
+
+
+                message.setReadAt(
+                        LocalDateTime.now()
+                );
+
+
+            }
+
+
+
+        });
+
+
+
+
+
+
+        messageRepository.saveAll(
+                messages
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+     *
+     * ENTITY -> DTO
+     *
+     */
+
+    private MessageResponse convert(
             Message message
     ){
 
 
 
-        return MessageResponse.builder()
+        MessageResponse response =
+
+                new MessageResponse();
 
 
-                .id(
-                        message.getId()
-                )
 
 
-                .content(
-                        message.getContent()
-                )
 
 
-                .conversationId(
-                        message.getConversation().getId()
-                )
+        response.setId(
+                message.getId()
+        );
 
 
-                .senderId(
-                        message.getSender().getId()
-                )
+
+        response.setContent(
+                message.getContent()
+        );
 
 
-                .senderFirstname(
-                        message.getSender().getFirstname()
-                )
+
+        response.setConversationId(
+                message.getConversation().getId()
+        );
 
 
-                .sentAt(
-                        message.getSentAt()
-                )
+
+        response.setSenderId(
+                message.getSender().getId()
+        );
 
 
-                .status(
 
-                        message.isRead()
-                        ?
-                        "READ"
-                        :
-                        "SENT"
-
-                )
+        response.setSenderFirstname(
+                message.getSender().getFirstname()
+        );
 
 
-                .build();
+
+        response.setSentAt(
+                message.getSentAt()
+        );
+
+
+
+        response.setDelivered(
+                message.isDelivered()
+        );
+
+
+
+        response.setRead(
+                message.isRead()
+        );
+
+
+
+        response.setDeliveredAt(
+                message.getDeliveredAt()
+        );
+
+
+
+        response.setReadAt(
+                message.getReadAt()
+        );
+
+
+
+
+
+        return response;
+
 
 
     }

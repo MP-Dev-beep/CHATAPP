@@ -5,17 +5,15 @@ import api from "./api";
 export async function login(data){
 
 
-
     const response =
 
         await api.post(
 
-            "/api/auth/login",
+            "/auth/login",
 
             data
 
         );
-
 
 
 
@@ -29,8 +27,6 @@ export async function login(data){
 
 
 
-
-
     localStorage.setItem(
 
         "userId",
@@ -41,10 +37,7 @@ export async function login(data){
 
 
 
-
-
     return response.data;
-
 
 
 }

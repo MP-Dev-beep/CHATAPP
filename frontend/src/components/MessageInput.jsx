@@ -14,7 +14,10 @@ import {
 
 
 
+
+
 function MessageInput(){
+
 
 
     const [content,setContent] =
@@ -22,9 +25,13 @@ function MessageInput(){
 
 
 
+
+
     const {
         conversationId
     } = useConversation();
+
+
 
 
 
@@ -44,18 +51,17 @@ function MessageInput(){
 
 
 
+
         if(!conversationId){
 
-
             console.log(
-                "Aucune conversation ouverte"
+                "Aucune conversation"
             );
-
 
             return;
 
-
         }
+
 
 
 
@@ -85,12 +91,18 @@ function MessageInput(){
 
 
 
+
+
+
     function handleKeyDown(e){
 
 
-        if(e.key === "Enter"){
+
+        if(e.key==="Enter"){
+
 
             handleSend();
+
 
         }
 
@@ -103,10 +115,12 @@ function MessageInput(){
 
 
 
+
+
     return (
 
-        <div className="message-input">
 
+        <div className="message-input">
 
 
             <input
@@ -121,12 +135,14 @@ function MessageInput(){
                 value={content}
 
 
+
                 onChange={
-                    e =>
+                    e=>
                     setContent(
                         e.target.value
                     )
                 }
+
 
 
                 onKeyDown={
@@ -134,7 +150,10 @@ function MessageInput(){
                 }
 
 
+
             />
+
+
 
 
 

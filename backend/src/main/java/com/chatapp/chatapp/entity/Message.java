@@ -7,14 +7,16 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 
+
 @Entity
-@Table(name = "messages")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "message")
 public class Message {
+
 
 
     @Id
@@ -23,8 +25,20 @@ public class Message {
 
 
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(nullable = false)
     private String content;
+
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversation_id")
+    private Conversation conversation;
+
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id")
+    private User sender;
 
 
 
@@ -32,43 +46,29 @@ public class Message {
 
 
 
-    private boolean read;
-
-
-
-    /**
-     * Utilisateur qui a envoyé le message
+    /*
+     * Message arrivé chez le destinataire
+     * ✓✓ gris
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "sender_id",
-            nullable = false
-    )
-    private User sender;
+    @Builder.Default
+    private boolean delivered = false;
 
 
 
-    /**
-     * Conversation associée
+    private LocalDateTime deliveredAt;
+
+
+
+    /*
+     * Message lu par le destinataire
+     * ✓✓ bleu
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "conversation_id",
-            nullable = false
-    )
-    private Conversation conversation;
+    @Builder.Default
+    private boolean read = false;
 
 
 
-    @PrePersist
-    public void beforeSave(){
+    private LocalDateTime readAt;
 
-        if(sentAt == null){
-
-            sentAt = LocalDateTime.now();
-
-        }
-
-    }
 
 }

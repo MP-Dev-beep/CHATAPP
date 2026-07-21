@@ -15,20 +15,24 @@ import {
 
 
 
+
+
 function MessageList(){
 
 
 
     const {
 
-        messages = []
+        messages=[]
 
     } = useConversation();
 
 
 
 
-    const messagesEndRef = useRef();
+
+    const bottomRef =
+        useRef();
 
 
 
@@ -39,7 +43,7 @@ function MessageList(){
     useEffect(()=>{
 
 
-        messagesEndRef.current?.scrollIntoView({
+        bottomRef.current?.scrollIntoView({
 
             behavior:"smooth"
 
@@ -47,6 +51,8 @@ function MessageList(){
 
 
     },[messages]);
+
+
 
 
 
@@ -66,38 +72,42 @@ function MessageList(){
 
             {
 
-                (messages || []).length === 0 ? (
+            messages.length===0 ?
 
 
-                    <p className="empty-chat">
+            (
 
-                        Aucun message
+                <p>
 
-                    </p>
+                    Aucun message
 
+                </p>
 
-                ) : (
-
-
-                    (messages || []).map(message=>(
+            )
 
 
-                        <MessageBubble
+            :
 
 
-                            key={message.id}
+
+            messages.map(message=>(
 
 
-                            message={message}
+
+                <MessageBubble
 
 
-                        />
+                    key={message.id}
 
 
-                    ))
+                    message={message}
 
 
-                )
+                />
+
+
+
+            ))
 
 
 
@@ -108,12 +118,16 @@ function MessageList(){
 
 
 
-            <div ref={messagesEndRef}/>
+
+
+            <div ref={bottomRef}/>
+
+
+
 
 
 
         </div>
-
 
 
     );

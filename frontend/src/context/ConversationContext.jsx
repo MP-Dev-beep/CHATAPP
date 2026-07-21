@@ -12,49 +12,53 @@ import {
 
 
 import {
-    connectWebSocket,
-    disconnectWebSocket
-} from "../services/websocket";
-
-
-import {
     getMessages
 } from "../services/message";
 
 
+import {
+    connectWebSocket,
+    disconnectWebSocket,
+    sendDelivered,
+    sendRead
+} from "../services/websocket";
 
 
-const ConversationContext = createContext(null);
-
-
-
-
-
-
-export function ConversationProvider({children}) {
-
-
-
-    const [
-        conversations,
-        setConversations
-    ] = useState([]);
+import {
+    useUsers
+} from "./UserContext";
 
 
 
-    const [
-        conversationId,
-        setConversationId
-    ] = useState(null);
+
+const ConversationContext = createContext();
 
 
 
-    const [
-        messages,
-        setMessages
-    ] = useState([]);
 
 
+export function ConversationProvider({children}){
+
+
+    const {
+        user
+    } = useUsers();
+
+
+
+
+    const [conversations,setConversations] =
+        useState([]);
+
+
+
+    const [conversationId,setConversationId] =
+        useState(null);
+
+
+
+    const [messages,setMessages] =
+        useState([]);
 
 
 
@@ -66,14 +70,8 @@ export function ConversationProvider({children}) {
         try{
 
 
-            const data = await getConversations();
-
-
-
-            console.log(
-                 "Conversations détaillées :",
-                  JSON.stringify(data, null, 2)
-            );
+            const data =
+                await getConversations();
 
 
 
@@ -82,13 +80,12 @@ export function ConversationProvider({children}) {
             );
 
 
-
         }
         catch(error){
 
 
             console.error(
-                "Erreur chargement conversations :",
+                "Erreur chargement conversations",
                 error
             );
 
@@ -97,7 +94,6 @@ export function ConversationProvider({children}) {
 
 
     }
-
 
 
 
@@ -109,27 +105,60 @@ export function ConversationProvider({children}) {
     async function openConversation(id){
 
 
+        if(!user){
+
+            return;
+
+        }
+
+
+
+        setConversationId(id);
+
+
+
         try{
 
 
-            setConversationId(id);
-
-
-
-            setMessages([]);
-
-
-
-            const oldMessages =
-
+            const history =
                 await getMessages(id);
 
 
 
             setMessages(
-                oldMessages || []
+                history || []
             );
 
+
+
+            /*
+                Quand on ouvre une conversation,
+                on marque les messages reçus comme lus
+            */
+
+
+            history.forEach(message=>{
+
+
+                if(
+                    message.senderId !== user.id
+                    &&
+                    !message.read
+                ){
+
+                    sendDelivered(
+                        message.id
+                    );
+
+
+                    sendRead(
+                        message.id
+                    );
+
+                }
+
+
+            });
 
 
 
@@ -137,29 +166,146 @@ export function ConversationProvider({children}) {
 
             connectWebSocket(
 
+
                 id,
 
 
-                (newMessage)=>{
+                user.id,
 
 
-                    setMessages(
 
-                        previous => [
-
-
-                            ...previous,
+                (message)=>{
 
 
-                            newMessage
+                    console.log(
+                        "NOUVEAU MESSAGE",
+                        message
+                    );
 
 
-                        ]
+
+                    /*
+                       Réception côté destinataire
+                       => reçu
+                    */
+
+
+                    if(
+                        message.senderId !== user.id
+                    ){
+
+                        sendDelivered(
+                            message.id
+                        );
+
+                    }
+
+
+
+
+
+                    setMessages(prev=>{
+
+
+                        const exists =
+                            prev.some(
+                                m =>
+                                m.id === message.id
+                            );
+
+
+
+                        if(exists){
+
+                            return prev;
+
+                        }
+
+
+
+                        return [
+
+                            ...prev,
+
+                            message
+
+                        ];
+
+
+                    });
+
+
+
+                    loadConversations();
+
+
+
+                },
+
+
+
+
+
+                (status)=>{
+
+
+                    console.log(
+                        "STATUS MESSAGE",
+                        status
+                    );
+
+
+
+                    setMessages(prev=>
+
+
+                        prev.map(message=>
+
+
+                            message.id === status.id
+
+                            ?
+
+                            {
+
+                                ...message,
+
+
+                                delivered:
+                                status.delivered,
+
+
+                                read:
+                                status.read,
+
+
+                                deliveredAt:
+                                status.deliveredAt,
+
+
+                                readAt:
+                                status.readAt
+
+                            }
+
+
+                            :
+
+                            message
+
+
+                        )
+
 
                     );
 
 
+
+                    loadConversations();
+
+
                 }
+
 
 
             );
@@ -171,7 +317,7 @@ export function ConversationProvider({children}) {
 
 
             console.error(
-                "Erreur ouverture conversation :",
+                "Erreur ouverture conversation",
                 error
             );
 
@@ -180,6 +326,7 @@ export function ConversationProvider({children}) {
 
 
     }
+
 
 
 
@@ -192,7 +339,13 @@ export function ConversationProvider({children}) {
     useEffect(()=>{
 
 
-        loadConversations();
+        if(user){
+
+
+            loadConversations();
+
+
+        }
 
 
 
@@ -205,7 +358,8 @@ export function ConversationProvider({children}) {
         };
 
 
-    },[]);
+
+    },[user]);
 
 
 
@@ -222,38 +376,28 @@ export function ConversationProvider({children}) {
         <ConversationContext.Provider
 
 
-            value={
+            value={{
 
 
-
-                {
-
-
-                    conversations,
+                conversations,
 
 
-                    loadConversations,
+                conversationId,
 
 
-                    conversationId,
+                messages,
 
 
-                    messages,
+                setMessages,
 
 
-                    openConversation,
+                openConversation,
 
 
-                    setMessages
+                loadConversations
 
 
-
-                }
-
-
-
-            }
-
+            }}
 
 
         >
@@ -278,32 +422,12 @@ export function ConversationProvider({children}) {
 
 
 
-
-
 export function useConversation(){
 
 
-
-    const context = useContext(
+    return useContext(
         ConversationContext
     );
-
-
-
-    if(!context){
-
-
-        throw new Error(
-            "useConversation doit être utilisé dans ConversationProvider"
-        );
-
-
-    }
-
-
-
-    return context;
-
 
 
 }

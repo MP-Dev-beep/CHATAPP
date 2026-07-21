@@ -12,9 +12,11 @@ import com.chatapp.chatapp.entity.User;
 import com.chatapp.chatapp.repository.ConversationRepository;
 import com.chatapp.chatapp.repository.UserRepository;
 
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.LocalDateTime;
@@ -25,7 +27,9 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ConversationService {
+
 
 
     private final ConversationRepository conversationRepository;
@@ -42,13 +46,21 @@ public class ConversationService {
     ){
 
 
-        User currentUser =
-
-                userRepository.findByEmail(email)
-
+        User currentUser = userRepository
+                .findByEmail(email)
                 .orElseThrow(() ->
                         new RuntimeException(
-                                "Utilisateur introuvable"
+                                "Utilisateur connecté introuvable"
+                        )
+                );
+
+
+
+        User otherUser = userRepository
+                .findById(request.getUserId())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Utilisateur destinataire introuvable"
                         )
                 );
 
@@ -56,74 +68,39 @@ public class ConversationService {
 
 
 
-        User otherUser =
-
-                userRepository.findById(
-                        request.getUserId()
-                )
-
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Destinataire introuvable"
-                        )
-                );
-
-
-
-
-
-
-
-        Conversation conversation =
-
-                conversationRepository
-
+        return conversationRepository
                 .findConversationBetweenUsers(
-
                         currentUser.getId(),
-
                         otherUser.getId()
-
                 )
-
+                .map(this::convertToResponse)
                 .orElseGet(() -> {
 
 
-                    Conversation newConversation =
-
+                    Conversation conversation =
                             Conversation.builder()
-
-                            .user1(currentUser)
-
-                            .user2(otherUser)
-
-                            .createdAt(
-                                    LocalDateTime.now()
-                            )
-
-                            .build();
+                                    .user1(currentUser)
+                                    .user2(otherUser)
+                                    .createdAt(LocalDateTime.now())
+                                    .build();
 
 
 
-                    return conversationRepository.save(
-                            newConversation
-                    );
+                    Conversation saved =
+                            conversationRepository.save(
+                                    conversation
+                            );
+
+
+
+                    return convertToResponse(saved);
 
 
                 });
 
 
 
-
-
-
-        return convertToResponse(
-                conversation
-        );
-
-
     }
-
 
 
 
@@ -139,9 +116,7 @@ public class ConversationService {
 
 
         User user =
-
                 userRepository.findByEmail(email)
-
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Utilisateur introuvable"
@@ -151,20 +126,13 @@ public class ConversationService {
 
 
 
-
-
         return conversationRepository
-
                 .findUserConversations(
                         user.getId()
                 )
-
                 .stream()
-
                 .map(this::convertToResponse)
-
                 .toList();
-
 
 
     }
@@ -183,70 +151,49 @@ public class ConversationService {
 
 
 
-        UserResponse user1 =
-
-                convertUser(
-                        conversation.getUser1()
-                );
-
-
-
-        UserResponse user2 =
-
-                convertUser(
-                        conversation.getUser2()
-                );
-
-
-
-
-
-
         String lastMessage = null;
 
-        LocalDateTime lastTime = null;
+        LocalDateTime lastMessageTime = null;
 
 
 
 
 
+        if(conversation.getMessages()!=null
+                &&
+                !conversation.getMessages().isEmpty()
+        ){
 
 
-        if(conversation.getMessages()!=null &&
-
-                !conversation.getMessages().isEmpty()){
-
-
-
-            Message last =
+            Message message =
 
                     conversation.getMessages()
-
-                    .stream()
-
-                    .max(
-                            Comparator.comparing(
-                                    Message::getSentAt
+                            .stream()
+                            .filter(m ->
+                                    m.getSentAt()!=null
                             )
-                    )
-
-                    .get();
-
-
-
-
-            lastMessage =
-                    last.getContent();
+                            .max(
+                                    Comparator.comparing(
+                                            Message::getSentAt
+                                    )
+                            )
+                            .orElse(null);
 
 
 
-            lastTime =
-                    last.getSentAt();
+            if(message!=null){
 
+                lastMessage =
+                        message.getContent();
+
+
+                lastMessageTime =
+                        message.getSentAt();
+
+            }
 
 
         }
-
 
 
 
@@ -270,8 +217,16 @@ public class ConversationService {
                 .users(
 
                         List.of(
-                                user1,
-                                user2
+
+                                convertUser(
+                                        conversation.getUser1()
+                                ),
+
+
+                                convertUser(
+                                        conversation.getUser2()
+                                )
+
                         )
 
                 )
@@ -283,7 +238,7 @@ public class ConversationService {
 
 
                 .lastMessageTime(
-                        lastTime
+                        lastMessageTime
                 )
 
 
@@ -328,7 +283,6 @@ public class ConversationService {
 
 
     }
-
 
 
 }

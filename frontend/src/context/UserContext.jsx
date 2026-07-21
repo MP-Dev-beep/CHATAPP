@@ -1,87 +1,32 @@
 import {
     createContext,
     useContext,
-    useEffect,
-    useState
+    useState,
+    useEffect
 } from "react";
 
 
-import api from "../services/api";
-
-
 import {
+    getUsers,
     getCurrentUser
 } from "../services/user";
 
 
 
 
-const UserContext =
-    createContext(null);
+const UserContext = createContext();
 
 
 
 
 
-
-export function UserProvider({
-    children
-}) {
+export function UserProvider({children}){
 
 
-    const [
-        user,
-        setUser
-    ] = useState(null);
+    const [users,setUsers] = useState([]);
 
 
-
-    const [
-        users,
-        setUsers
-    ] = useState([]);
-
-
-
-
-
-
-
-    async function loadUser(){
-
-
-        try {
-
-
-            const data =
-                await getCurrentUser();
-
-
-
-            setUser(data);
-
-
-
-            console.log(
-                "Utilisateur connecté :",
-                data
-            );
-
-
-
-        } catch(error){
-
-
-            console.error(
-                "Erreur utilisateur :",
-                error
-            );
-
-
-        }
-
-
-    }
+    const [user,setUser] = useState(null);
 
 
 
@@ -93,27 +38,23 @@ export function UserProvider({
     async function fetchUsers(){
 
 
-        try {
+        try{
 
 
-            const response =
-                await api.get(
-                    "/api/users"
-                );
-
+            const data = await getUsers();
 
 
             setUsers(
-                response.data || []
+                data || []
             );
 
 
-
-        } catch(error){
+        }
+        catch(error){
 
 
             console.error(
-                "Erreur chargement utilisateurs :",
+                "Erreur récupération utilisateurs :",
                 error
             );
 
@@ -130,22 +71,57 @@ export function UserProvider({
 
 
 
-    useEffect(()=>{
+
+    async function loadCurrentUser(){
 
 
-        const token =
-            localStorage.getItem("token");
+        try{
 
 
+            const data = await getCurrentUser();
 
-        if(token){
+
+            setUser(
+                data
+            );
 
 
-            loadUser();
+            console.log(
+                "Utilisateur connecté :",
+                data
+            );
+
+
+        }
+        catch(error){
+
+
+            console.error(
+                "Erreur utilisateur connecté :",
+                error
+            );
 
 
         }
 
+
+    }
+
+
+
+
+
+
+
+
+
+
+    useEffect(()=>{
+
+
+        loadCurrentUser();
+
+        fetchUsers();
 
 
     },[]);
@@ -157,30 +133,23 @@ export function UserProvider({
 
 
 
-    return (
 
+    return (
 
         <UserContext.Provider
 
 
             value={{
 
-
                 user,
-
-
-                setUser,
-
 
                 users,
 
+                fetchUsers,
 
-                fetchUsers
-
-
+                loadCurrentUser
 
             }}
-
 
 
         >
@@ -195,9 +164,7 @@ export function UserProvider({
     );
 
 
-
 }
-
 
 
 
@@ -210,11 +177,9 @@ export function UserProvider({
 export function useUsers(){
 
 
-    const context =
-        useContext(
-            UserContext
-        );
-
+    const context = useContext(
+        UserContext
+    );
 
 
     if(!context){
@@ -226,7 +191,6 @@ export function useUsers(){
 
 
     }
-
 
 
     return context;
