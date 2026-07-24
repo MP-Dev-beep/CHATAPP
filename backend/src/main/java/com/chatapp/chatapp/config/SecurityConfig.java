@@ -33,13 +33,17 @@ import java.util.List;
 
 
 
+
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
 
 
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+
 
 
 
@@ -60,11 +64,13 @@ public class SecurityConfig {
                 )
 
 
+
                 .cors(cors ->
                         cors.configurationSource(
                                 corsConfigurationSource()
                         )
                 )
+
 
 
                 .sessionManagement(session ->
@@ -74,10 +80,15 @@ public class SecurityConfig {
                 )
 
 
+
                 .authorizeHttpRequests(auth -> auth
 
 
-                        // Connexion + inscription
+
+                        // ==========================
+                        // Auth
+                        // ==========================
+
                         .requestMatchers(
                                 "/api/auth/**"
                         )
@@ -85,7 +96,12 @@ public class SecurityConfig {
 
 
 
-                        // WebSocket STOMP
+
+
+                        // ==========================
+                        // WebSocket
+                        // ==========================
+
                         .requestMatchers(
                                 "/ws/**"
                         )
@@ -93,7 +109,25 @@ public class SecurityConfig {
 
 
 
+
+
+                        // ==========================
+                        // Images avatars
+                        // ==========================
+
+                        .requestMatchers(
+                                "/uploads/**"
+                        )
+                        .permitAll()
+
+
+
+
+
+                        // ==========================
                         // Erreurs Spring
+                        // ==========================
+
                         .requestMatchers(
                                 "/error"
                         )
@@ -101,17 +135,29 @@ public class SecurityConfig {
 
 
 
-                        // Tout le reste protégé
+
+
+                        // ==========================
+                        // API protégées JWT
+                        // ==========================
+
                         .anyRequest()
                         .authenticated()
+
+
 
                 )
 
 
 
+
+
                 .addFilterBefore(
+
                         jwtAuthenticationFilter,
+
                         UsernamePasswordAuthenticationFilter.class
+
                 )
 
 
@@ -126,12 +172,17 @@ public class SecurityConfig {
 
 
 
+
+
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public PasswordEncoder passwordEncoder(){
+
 
         return new BCryptPasswordEncoder();
 
+
     }
+
 
 
 
@@ -146,9 +197,12 @@ public class SecurityConfig {
     ) throws Exception {
 
 
+
         return configuration.getAuthenticationManager();
 
+
     }
+
 
 
 
@@ -163,57 +217,90 @@ public class SecurityConfig {
 
 
         CorsConfiguration configuration =
+
                 new CorsConfiguration();
 
 
 
+
         configuration.setAllowedOrigins(
+
                 List.of(
+
                         "http://localhost:5173"
+
                 )
+
         );
 
 
 
+
+
         configuration.setAllowedMethods(
+
                 List.of(
+
                         "GET",
                         "POST",
                         "PUT",
                         "DELETE",
                         "OPTIONS"
+
                 )
+
         );
+
+
 
 
 
         configuration.setAllowedHeaders(
+
                 List.of(
+
                         "*"
+
                 )
+
         );
+
+
 
 
 
         configuration.setAllowCredentials(
+
                 true
+
         );
+
+
 
 
 
         UrlBasedCorsConfigurationSource source =
+
                 new UrlBasedCorsConfigurationSource();
 
 
 
+
+
         source.registerCorsConfiguration(
+
                 "/**",
+
                 configuration
+
         );
 
 
 
+
+
         return source;
+
 
     }
 

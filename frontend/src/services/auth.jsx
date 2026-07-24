@@ -2,14 +2,100 @@ import api from "./api";
 
 
 
-export async function login(data){
+// LOGIN
+export const login = async (data) => {
 
 
-    const response =
+    try {
 
-        await api.post(
 
+        const response = await api.post(
             "/auth/login",
+            data
+        );
+
+
+        console.log(
+            "REPONSE LOGIN :",
+            response.data
+        );
+
+
+
+        const token =
+            response.data.token;
+
+
+
+        if(token){
+
+
+            localStorage.setItem(
+                "token",
+                token
+            );
+
+
+            console.log(
+                "TOKEN STOCKE :",
+                token
+            );
+
+
+        }
+
+
+
+        if(response.data.user){
+
+
+            localStorage.setItem(
+
+                "user",
+
+                JSON.stringify(
+                    response.data.user
+                )
+
+            );
+
+
+        }
+
+
+
+        return response.data;
+
+
+
+    } catch(error){
+
+
+        console.error(
+            "Erreur connexion :",
+            error
+        );
+
+
+        throw error;
+
+    }
+
+};
+
+
+
+
+// REGISTER
+export const register = async (data) => {
+
+
+    try {
+
+
+        const response = await api.post(
+
+            "/auth/register",
 
             data
 
@@ -17,27 +103,85 @@ export async function login(data){
 
 
 
-    localStorage.setItem(
+        console.log(
+            "REPONSE REGISTER :",
+            response.data
+        );
 
-        "token",
 
-        response.data.token
 
+        const token =
+            response.data.token;
+
+
+
+        if(token){
+
+
+            localStorage.setItem(
+                "token",
+                token
+            );
+
+
+        }
+
+
+
+        if(response.data.user){
+
+
+            localStorage.setItem(
+
+                "user",
+
+                JSON.stringify(
+                    response.data.user
+                )
+
+            );
+
+
+        }
+
+
+
+        return response.data;
+
+
+
+    } catch(error){
+
+
+        console.error(
+            "Erreur inscription :",
+            error
+        );
+
+
+        throw error;
+
+
+    }
+
+
+};
+
+
+
+
+// LOGOUT
+export const logout = () => {
+
+
+    localStorage.removeItem(
+        "token"
     );
 
 
-
-    localStorage.setItem(
-
-        "userId",
-
-        response.data.user.id
-
+    localStorage.removeItem(
+        "user"
     );
 
 
-
-    return response.data;
-
-
-}
+};

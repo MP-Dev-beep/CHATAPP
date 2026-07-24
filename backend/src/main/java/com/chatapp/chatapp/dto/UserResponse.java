@@ -1,10 +1,9 @@
 package com.chatapp.chatapp.dto;
 
 
-
-
 import lombok.Builder;
 import lombok.Getter;
+
 
 
 @Getter
@@ -22,6 +21,13 @@ public class UserResponse {
 
 
     private String email;
+
+
+    private String avatar;
+
+
+    private boolean online;
+
 
 
 }

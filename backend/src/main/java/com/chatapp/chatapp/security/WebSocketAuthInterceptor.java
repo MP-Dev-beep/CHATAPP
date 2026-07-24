@@ -3,25 +3,22 @@ package com.chatapp.chatapp.security;
 
 import com.chatapp.chatapp.service.JwtService;
 
-
 import lombok.RequiredArgsConstructor;
-
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 
 import org.springframework.messaging.support.ChannelInterceptor;
-import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.messaging.support.MessageHeaderAccessor;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import org.springframework.stereotype.Component;
 
 
-import java.security.Principal;
-import java.util.Map;
-
+import java.util.Collections;
 
 
 
@@ -31,10 +28,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
-
     private final JwtService jwtService;
-
-
 
 
 
@@ -50,127 +44,22 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     ){
 
 
-
         StompHeaderAccessor accessor =
 
-                StompHeaderAccessor.wrap(message);
+                MessageHeaderAccessor.getAccessor(
 
+                        message,
 
-
-
-
-
-
-        System.out.println(
-
-                "STOMP COMMAND : "
-
-                +
-
-                accessor.getCommand()
-
-        );
-
-
-
-
-
-
-
-
-
-        // ===========================
-        // CONNEXION
-        // ===========================
-
-
-        if(
-                StompCommand.CONNECT.equals(
-                        accessor.getCommand()
-                )
-        ){
-
-
-
-            String auth =
-
-                    accessor.getFirstNativeHeader(
-
-                            "Authorization"
-
-                    );
-
-
-
-
-
-            if(
-
-                    auth != null &&
-
-                    auth.startsWith("Bearer ")
-
-            ){
-
-
-
-                String token =
-
-                        auth.substring(7);
-
-
-
-
-
-                String email =
-
-                        jwtService.extractEmail(
-
-                                token
-
-                        );
-
-
-
-
-
-
-
-
-                Principal principal = () -> email;
-
-
-
-
-
-
-                accessor.setUser(
-
-                        principal
+                        StompHeaderAccessor.class
 
                 );
 
 
 
 
+        if(accessor == null){
 
-
-
-                System.out.println(
-
-                        "WEBSOCKET USER : "
-
-                        +
-
-                        email
-
-                );
-
-
-
-            }
-
-
+            return message;
 
         }
 
@@ -179,117 +68,115 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
+        if(StompCommand.CONNECT.equals(
+
+                accessor.getCommand()
+
+        )){
 
 
 
-        // ===========================
-        // RESTAURATION SESSION
-        // ===========================
+            String header =
 
-
-        if(
-
-                accessor.getUser() == null
-
-        ){
-
-
-
-            Map<String,Object> attributes =
-
-                    accessor.getSessionAttributes();
-
-
-
-
-
-            if(attributes != null){
-
-
-
-                Principal principal =
-
-
-                        (Principal)
-
-                        attributes.get(
-
-                                "principal"
-
-                        );
-
-
-
-
-
-                if(principal != null){
-
-
-
-                    accessor.setUser(
-
-                            principal
-
+                    accessor.getFirstNativeHeader(
+                            "Authorization"
                     );
 
+
+
+
+
+            System.out.println(
+                    "========== WS CONNECT =========="
+            );
+
+
+            System.out.println(
+                    "HEADER : " + header
+            );
+
+
+
+
+
+
+
+            if(header != null && header.startsWith("Bearer ")){
+
+                try{
+
+
+                    String token =
+
+                            header.substring(7);
+
+
+
+
+                    String email =
+
+                            jwtService.extractEmail(
+                                    token
+                            );
+
+
+
+
+
+
+                    UsernamePasswordAuthenticationToken auth =
+
+                            new UsernamePasswordAuthenticationToken(
+
+                                    email,
+
+                                    null,
+
+                                    Collections.emptyList()
+
+                            );
+
+
+
+
+
+                    accessor.setUser(auth);
+
+
+
+
+                    System.out.println(
+                            "WS USER AUTH : "
+                            + email
+                    );
+
+
+
+                }
+                catch(Exception e){
+
+
+                    System.out.println(
+                            "JWT WS ERROR : "
+                            + e.getMessage()
+                    );
 
 
                 }
 
 
             }
+            else{
 
 
-
-        }
-
-
-
-
-
-
-
-
-
-        // ===========================
-        // SAUVEGARDE SESSION
-        // ===========================
-
-
-        if(
-
-                accessor.getUser() != null
-
-        ){
-
-
-
-            Map<String,Object> attributes =
-
-                    accessor.getSessionAttributes();
-
-
-
-
-
-            if(attributes != null){
-
-
-
-                attributes.put(
-
-                        "principal",
-
-                        accessor.getUser()
-
+                System.out.println(
+                        "TOKEN WS ABSENT"
                 );
-
 
 
             }
 
 
-
         }
 
 
@@ -297,17 +184,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
-
-
-
-        return MessageBuilder.createMessage(
-
-                message.getPayload(),
-
-                accessor.getMessageHeaders()
-
-        );
-
+        return message;
 
 
     }

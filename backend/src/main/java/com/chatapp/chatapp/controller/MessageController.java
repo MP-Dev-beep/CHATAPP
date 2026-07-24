@@ -35,12 +35,21 @@ public class MessageController {
 
 
 
-    // ENVOYER MESSAGE
+
+    /*
+    =========================================
+        ENVOYER MESSAGE
+    =========================================
+    */
+
 
     @PostMapping
     public ResponseEntity<MessageResponse> sendMessage(
+
             Authentication authentication,
+
             @RequestBody MessageRequest request
+
     ){
 
 
@@ -56,6 +65,7 @@ public class MessageController {
 
         );
 
+
     }
 
 
@@ -64,19 +74,37 @@ public class MessageController {
 
 
 
-    // RECUPERER LES MESSAGES
+
+
+    /*
+    =========================================
+        HISTORIQUE MESSAGES
+    =========================================
+    */
+
 
     @GetMapping("/conversation/{id}")
     public ResponseEntity<List<MessageResponse>> getMessages(
+
+            Authentication authentication,
+
             @PathVariable Long id
+
     ){
 
 
         return ResponseEntity.ok(
 
-                messageService.getMessages(id)
+                messageService.getMessages(
+
+                        authentication.getName(),
+
+                        id
+
+                )
 
         );
+
 
     }
 
@@ -87,20 +115,114 @@ public class MessageController {
 
 
 
-    // MARQUER UNE CONVERSATION COMME LUE
 
-    @PutMapping("/read/{conversationId}")
+    /*
+    =========================================
+        MESSAGE LIVRE ✓✓ GRIS
+    =========================================
+    */
+
+
+    @PutMapping("/delivered/{id}")
+    public ResponseEntity<MessageResponse> markDelivered(
+
+            Authentication authentication,
+
+            @PathVariable Long id
+
+    ){
+
+
+        return ResponseEntity.ok(
+
+                messageService.markAsDelivered(
+
+                        id,
+
+                        authentication.getName()
+
+                )
+
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /*
+    =========================================
+        MESSAGE LU ✓✓ BLEU
+    =========================================
+    */
+
+
+    @PutMapping("/read/{id}")
+    public ResponseEntity<MessageResponse> markRead(
+
+            Authentication authentication,
+
+            @PathVariable Long id
+
+    ){
+
+
+        return ResponseEntity.ok(
+
+                messageService.markAsRead(
+
+                        id,
+
+                        authentication.getName()
+
+                )
+
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+    /*
+    =========================================
+        CONVERSATION LUE
+    =========================================
+    */
+
+
+    @PutMapping("/conversation/read/{conversationId}")
     public ResponseEntity<Void> markConversationRead(
+
+            Authentication authentication,
+
             @PathVariable Long conversationId
+
     ){
 
 
         messageService.markConversationAsRead(
-                conversationId
+
+                conversationId,
+
+                authentication.getName()
+
         );
 
 
         return ResponseEntity.ok().build();
+
 
     }
 

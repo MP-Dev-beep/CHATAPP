@@ -6,21 +6,28 @@ function App(){
 
 
     const token =
+
         localStorage.getItem("token");
 
 
 
-    if(!token){
 
 
-        return <Login />;
+    return (
 
 
-    }
+        token
+
+        ?
+
+        <Chat />
+
+        :
+
+        <Login />
 
 
-
-    return <Chat />;
+    );
 
 
 }

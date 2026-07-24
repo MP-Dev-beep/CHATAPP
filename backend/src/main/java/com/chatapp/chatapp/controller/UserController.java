@@ -12,8 +12,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.*;
 import java.util.List;
+import java.util.UUID;
+
 
 
 @RestController
@@ -26,9 +31,38 @@ import java.util.List;
 public class UserController {
 
 
+
     private final UserRepository userRepository;
 
     private final UserService userService;
+
+
+
+    private static final String UPLOAD_DIR =
+            System.getProperty("user.dir")
+            + "/uploads/avatars/";
+
+
+
+
+
+
+
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test(){
+
+        return ResponseEntity.ok(
+                "USER CONTROLLER OK"
+        );
+
+    }
+
+
+
+
+
+
 
 
 
@@ -38,46 +72,86 @@ public class UserController {
     // =====================================
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(
+    public ResponseEntity<?> getCurrentUser(
             Authentication authentication
-    ) {
+    ){
 
 
-        String email = authentication.getName();
+        if(authentication == null){
+
+            System.out.println(
+                    "AUTHENTIFICATION NULL /me"
+            );
+
+
+            return ResponseEntity
+                    .status(401)
+                    .body("Non authentifié");
+
+        }
+
+
+
+
+        String email =
+                authentication.getName();
+
+
+
+        System.out.println(
+                "USER CONNECTE : "
+                + email
+        );
+
+
+
 
 
         User user =
+
                 userRepository.findByEmail(email)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Utilisateur introuvable"
-                                )
-                        );
+
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Utilisateur introuvable"
+                        )
+                );
+
+
+
+
 
 
         UserResponse response =
+
                 UserResponse.builder()
 
-                        .id(user.getId())
+                .id(user.getId())
 
-                        .firstname(
-                                user.getFirstname()
-                        )
+                .firstname(user.getFirstname())
 
-                        .lastname(
-                                user.getLastname()
-                        )
+                .lastname(user.getLastname())
 
-                        .email(
-                                user.getEmail()
-                        )
+                .email(user.getEmail())
 
-                        .build();
+                .avatar(user.getAvatar())
+
+                .online(user.isOnline())
+
+                .build();
+
+
+
 
 
         return ResponseEntity.ok(response);
 
+
     }
+
+
+
+
 
 
 
@@ -85,18 +159,31 @@ public class UserController {
 
     // =====================================
     // TOUS LES UTILISATEURS
-    // GET /api/users
     // =====================================
 
     @GetMapping
     public ResponseEntity<List<UserResponse>> getUsers(){
 
 
-        return ResponseEntity.ok(
-                userService.getAllUsers()
+
+        System.out.println(
+                "GET USERS APPELE"
         );
 
+
+
+        return ResponseEntity.ok(
+
+                userService.getAllUsers()
+
+        );
+
+
     }
+
+
+
+
 
 
 
@@ -104,18 +191,22 @@ public class UserController {
 
     // =====================================
     // RECHERCHE
-    // GET /api/users/search?keyword=
     // =====================================
 
     @GetMapping("/search")
     public ResponseEntity<List<UserResponse>> searchUsers(
+
             @RequestParam String keyword
+
     ){
 
 
         return ResponseEntity.ok(
+
                 userService.searchUsers(keyword)
+
         );
+
 
     }
 
@@ -123,28 +214,247 @@ public class UserController {
 
 
 
+
+
+
+
     // =====================================
-    // MODIFIER PROFIL
-    // PUT /api/users/profile
+    // UPDATE PROFIL
     // =====================================
 
     @PutMapping("/profile")
-    public ResponseEntity<UserResponse> updateProfile(
+    public ResponseEntity<?> updateProfile(
+
             Authentication authentication,
+
             @RequestBody UpdateProfileRequest request
+
     ){
 
 
+
+        if(authentication == null){
+
+            return ResponseEntity
+                    .status(401)
+                    .body("Non authentifié");
+
+        }
+
+
+
+
         String email =
+
                 authentication.getName();
 
 
+
+
         return ResponseEntity.ok(
+
                 userService.updateProfile(
+
                         email,
+
                         request
+
                 )
+
         );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    // =====================================
+    // UPLOAD AVATAR
+    // =====================================
+
+    @PostMapping("/avatar")
+    public ResponseEntity<?> uploadAvatar(
+
+            Authentication authentication,
+
+            @RequestParam("file")
+            MultipartFile file
+
+    ) throws IOException {
+
+
+
+        if(authentication == null){
+
+            return ResponseEntity
+                    .status(401)
+                    .body("Non authentifié");
+
+        }
+
+
+
+
+
+        String email =
+
+                authentication.getName();
+
+
+
+
+
+        User user =
+
+                userRepository.findByEmail(email)
+
+                .orElseThrow(() ->
+
+                        new RuntimeException(
+                                "Utilisateur introuvable"
+                        )
+
+                );
+
+
+
+
+
+
+        Files.createDirectories(
+
+                Paths.get(UPLOAD_DIR)
+
+        );
+
+
+
+
+
+
+        String originalName =
+
+                file.getOriginalFilename();
+
+
+
+
+        String extension = "";
+
+
+
+        if(originalName != null &&
+                originalName.contains(".")){
+
+
+            extension =
+                    originalName.substring(
+                            originalName.lastIndexOf(".")
+                    );
+
+        }
+
+
+
+
+
+
+
+        String filename =
+
+                UUID.randomUUID()
+                +
+                extension;
+
+
+
+
+
+
+
+        Path destination =
+
+                Paths.get(
+
+                        UPLOAD_DIR,
+
+                        filename
+
+                );
+
+
+
+
+
+
+        Files.copy(
+
+                file.getInputStream(),
+
+                destination,
+
+                StandardCopyOption.REPLACE_EXISTING
+
+        );
+
+
+
+
+
+
+        user.setAvatar(
+
+                "/uploads/avatars/"
+                +
+                filename
+
+        );
+
+
+
+
+
+
+        User saved =
+
+                userRepository.save(user);
+
+
+
+
+
+
+        UserResponse response =
+
+                UserResponse.builder()
+
+                .id(saved.getId())
+
+                .firstname(saved.getFirstname())
+
+                .lastname(saved.getLastname())
+
+                .email(saved.getEmail())
+
+                .avatar(saved.getAvatar())
+
+                .online(saved.isOnline())
+
+                .build();
+
+
+
+
+
+
+        return ResponseEntity.ok(response);
+
 
     }
 

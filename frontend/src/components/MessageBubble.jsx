@@ -7,20 +7,35 @@ import {
 
 
 function MessageBubble({
+
     message
+
 }){
 
 
+
     const {
+
         user
+
     } = useUsers();
 
 
 
 
 
+
+
+
     const isMine =
-        message.senderId === user?.id;
+
+        Number(message.senderId)
+
+        ===
+
+        Number(user?.id);
+
+
 
 
 
@@ -38,24 +53,28 @@ function MessageBubble({
         }
 
 
+
+
         return new Date(date)
 
-        .toLocaleTimeString(
+            .toLocaleTimeString(
 
-            [],
+                [],
 
-            {
+                {
 
-                hour:"2-digit",
+                    hour:"2-digit",
 
-                minute:"2-digit"
+                    minute:"2-digit"
 
-            }
+                }
 
-        );
+            );
 
 
     }
+
+
 
 
 
@@ -69,7 +88,9 @@ function MessageBubble({
 
         if(!isMine){
 
+
             return null;
+
 
         }
 
@@ -77,25 +98,36 @@ function MessageBubble({
 
 
 
+
+
+
         /*
-            Message envoyé
+        ==================================
+            MESSAGE ENVOYE
             ✓
+        ==================================
         */
 
 
-        if(
-            !message.delivered
-        ){
+
+        if(!message.delivered){
+
+
 
             return (
+
 
                 <span className="status sent">
 
+
                     ✓
+
 
                 </span>
 
+
             );
+
 
         }
 
@@ -105,29 +137,47 @@ function MessageBubble({
 
 
 
+
+
         /*
-            Message reçu
-            ✓✓ gris
+        ==================================
+            MESSAGE LIVRE
+            ✓✓ GRIS
+        ==================================
         */
 
 
+
         if(
+
             message.delivered
+
             &&
+
             !message.read
+
         ){
 
+
+
             return (
+
 
                 <span className="status delivered">
 
+
                     ✓✓
+
 
                 </span>
 
+
             );
 
+
         }
+
+
 
 
 
@@ -136,30 +186,44 @@ function MessageBubble({
 
 
         /*
-            Message lu
-            ✓✓ bleu
+        ==================================
+            MESSAGE LU
+            ✓✓ BLEU
+        ==================================
         */
 
 
-        if(
-            message.read
-        ){
+
+        if(message.read){
+
+
 
             return (
 
+
                 <span className="status read">
+
 
                     ✓✓
 
+
                 </span>
 
+
             );
+
 
         }
 
 
 
+
+
+        return null;
+
+
     }
+
 
 
 
@@ -174,6 +238,8 @@ function MessageBubble({
 
         <div
 
+
+
             className={
 
                 isMine
@@ -186,43 +252,76 @@ function MessageBubble({
 
                 "message other-message"
 
+
             }
+
+
 
         >
 
 
 
-            <p>
-
-                {message.content}
-
-            </p>
 
 
 
+            <div className="bubble">
 
 
-            <div className="message-info">
+
+                <p>
 
 
-                <span>
+                    {message.content}
+
+
+                </p>
+
+
+
+
+
+
+                <div className="message-info">
+
+
+
+
+
+                    <span>
+
+
+                        {
+
+                        formatTime(
+
+                            message.sentAt
+
+                        )
+
+                        }
+
+
+                    </span>
+
+
+
+
+
+
 
                     {
-                        formatTime(
-                            message.sentAt
-                        )
-                    }
 
-                </span>
-
-
-
-
-                {
 
                     renderStatus()
 
-                }
+
+                    }
+
+
+
+
+                </div>
+
 
 
 
@@ -230,7 +329,12 @@ function MessageBubble({
 
 
 
+
+
+
+
         </div>
+
 
 
     );

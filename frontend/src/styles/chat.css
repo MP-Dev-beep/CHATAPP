@@ -730,3 +730,85 @@ body {
 .status.read{
     color:#2196f3;
 }
+
+
+.search-input{
+
+    width:100%;
+
+    padding:10px;
+
+    margin:10px 0;
+
+    border-radius:8px;
+
+    border:none;
+
+    outline:none;
+
+    background:#f1f1f1;
+
+}
+
+
+
+.dark .search-input{
+
+    background:#2f3136;
+
+    color:white;
+
+}
+
+
+
+.badge{
+
+    background:#2196f3;
+
+    color:white;
+
+    border-radius:50%;
+
+    padding:3px 7px;
+
+    font-size:12px;
+
+    margin-left:10px;
+
+}
+
+
+.avatar{
+
+    width:45px;
+    height:45px;
+    border-radius:50%;
+    overflow:hidden;
+    background:#444;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+
+}
+
+
+
+.avatar img{
+
+    width:100%;
+    height:100%;
+    object-fit:cover;
+
+}
+
+
+
+.avatar.large{
+
+    width:120px;
+    height:120px;
+    font-size:40px;
+
+}

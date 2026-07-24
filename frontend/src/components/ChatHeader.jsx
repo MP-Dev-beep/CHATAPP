@@ -16,6 +16,7 @@ import {
 
 
 
+
 function ChatHeader(){
 
 
@@ -24,10 +25,14 @@ function ChatHeader(){
 
         conversations,
 
-        conversationId
+        conversationId,
+
+        typingUser
 
 
     } = useConversation();
+
+
 
 
 
@@ -39,6 +44,8 @@ function ChatHeader(){
 
 
     } = useUsers();
+
+
 
 
 
@@ -60,18 +67,17 @@ function ChatHeader(){
 
 
 
+
     const currentConversation =
 
         conversations.find(
 
-
             conversation =>
-
 
                 conversation.id === conversationId
 
-
         );
+
 
 
 
@@ -82,16 +88,14 @@ function ChatHeader(){
 
     const otherUser =
 
-        currentConversation?.users.find(
-
+        currentConversation?.users?.find(
 
             user =>
 
-
                 user.id !== currentUser?.id
 
-
         );
+
 
 
 
@@ -103,8 +107,8 @@ function ChatHeader(){
     return (
 
 
-
         <div className="chat-header">
+
 
 
 
@@ -116,21 +120,41 @@ function ChatHeader(){
 
                 {
 
+
+                otherUser?.avatar ?
+
+
+                <img
+
+                    src={
+                        `http://localhost:8081${otherUser.avatar}`
+                    }
+
+                    alt="avatar"
+
+                />
+
+
+                :
+
+
                 otherUser?.firstname
 
                 ?
 
                 otherUser.firstname.charAt(0)
 
+
                 :
 
                 "?"
 
+
                 }
 
 
-
             </div>
+
 
 
 
@@ -146,21 +170,25 @@ function ChatHeader(){
                 <h3>
 
 
-
                     {
+
 
                     otherUser
 
+
                     ?
+
 
                     `${otherUser.firstname} ${otherUser.lastname}`
 
+
                     :
+
 
                     "Sélectionnez une conversation"
 
-                    }
 
+                    }
 
 
                 </h3>
@@ -171,20 +199,88 @@ function ChatHeader(){
 
 
 
+
+
                 {
+
 
                 otherUser &&
 
 
 
-                <span>
+                (
 
-                    🟢 En ligne
 
-                </span>
+
+                    typingUser
+
+
+                    ?
+
+
+
+                    <p className="typing">
+
+
+                        ✍️
+
+
+                        {" "}
+
+
+                        {typingUser}
+
+
+                        {" est en train d'écrire..."}
+
+
+
+                    </p>
+
+
+
+
+                    :
+
+
+
+                    <span>
+
+
+                        {
+
+
+                        otherUser.online
+
+
+                        ?
+
+
+                        "🟢 En ligne"
+
+
+                        :
+
+
+                        "⚫ Hors ligne"
+
+
+                        }
+
+
+
+                    </span>
+
+
+
+
+                )
+
 
 
                 }
+
+
 
 
 
@@ -198,35 +294,36 @@ function ChatHeader(){
 
 
 
-            <button
 
+
+            <button
 
                 className="theme-button"
 
-
                 onClick={toggleTheme}
-
 
             >
 
 
-
-
                 {
+
 
                 dark
 
+
                 ?
+
 
                 "☀️"
 
+
                 :
+
 
                 "🌙"
 
+
                 }
-
-
 
 
 
@@ -236,14 +333,10 @@ function ChatHeader(){
 
 
 
-
-
         </div>
 
 
-
     );
-
 
 
 }

@@ -28,14 +28,12 @@ public class Conversation {
 
 
 
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "user1_id",
             nullable = false
     )
     private User user1;
-
 
 
 
@@ -50,10 +48,8 @@ public class Conversation {
 
 
 
-
     @Column(nullable = false)
     private LocalDateTime createdAt;
-
 
 
 
@@ -64,11 +60,10 @@ public class Conversation {
             mappedBy = "conversation",
             cascade = CascadeType.ALL,
             orphanRemoval = true,
-            fetch = FetchType.EAGER
+            fetch = FetchType.LAZY
     )
     @Builder.Default
     private List<Message> messages = new ArrayList<>();
-
 
 
 

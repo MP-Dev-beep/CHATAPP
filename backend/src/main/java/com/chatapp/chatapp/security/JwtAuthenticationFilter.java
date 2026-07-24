@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
@@ -33,6 +32,7 @@ public class JwtAuthenticationFilter
         extends OncePerRequestFilter {
 
 
+
     private final JwtService jwtService;
 
 
@@ -40,23 +40,34 @@ public class JwtAuthenticationFilter
 
 
 
+
+
     @Override
     protected void doFilterInternal(
+
             HttpServletRequest request,
+
             HttpServletResponse response,
+
             FilterChain filterChain
-    )
-            throws ServletException, IOException {
+
+    ) throws ServletException, IOException {
 
 
 
-        String authHeader =
+        String header =
                 request.getHeader("Authorization");
 
 
 
-        if(authHeader == null ||
-                !authHeader.startsWith("Bearer ")){
+        System.out.println(
+                "AUTH HEADER = " + header
+        );
+
+
+
+        if(header == null ||
+                !header.startsWith("Bearer ")){
 
             filterChain.doFilter(
                     request,
@@ -64,51 +75,83 @@ public class JwtAuthenticationFilter
             );
 
             return;
+
         }
 
 
 
-        String token =
-                authHeader.substring(7);
+
+        try{
+
+
+            String token =
+                    header.substring(7);
 
 
 
-        String email =
-                jwtService.extractEmail(token);
+            String email =
+                    jwtService.extractEmail(token);
 
 
 
-        if(email != null &&
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication() == null){
+            if(SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    == null){
 
 
 
-            UserDetails userDetails =
-                    userDetailsService
-                            .loadUserByUsername(email);
+                UserDetails userDetails =
+                        userDetailsService
+                        .loadUserByUsername(email);
 
 
 
-            if(jwtService.isTokenValid(token)){
+                if(jwtService.isTokenValid(token)){
 
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                    UsernamePasswordAuthenticationToken auth =
 
 
-                SecurityContextHolder
-                        .getContext()
-                        .setAuthentication(authentication);
+                            new UsernamePasswordAuthenticationToken(
+
+                                    userDetails,
+
+                                    null,
+
+                                    userDetails.getAuthorities()
+
+                            );
+
+
+
+                    SecurityContextHolder
+                            .getContext()
+                            .setAuthentication(auth);
+
+
+                }
+
 
             }
 
+
+
+        }catch(Exception e){
+
+
+            System.out.println(
+                    "JWT ERROR : "
+                    + e.getMessage()
+            );
+
+
+            SecurityContextHolder
+                    .clearContext();
+
+
         }
+
 
 
         filterChain.doFilter(
@@ -116,6 +159,8 @@ public class JwtAuthenticationFilter
                 response
         );
 
+
     }
+
 
 }

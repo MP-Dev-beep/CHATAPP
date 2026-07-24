@@ -1,18 +1,28 @@
 import SockJS from "sockjs-client";
+
 import {
     Client
 } from "@stomp/stompjs";
 
 
 
+
+
 let stompClient = null;
 
 
-let currentSubscription = null;
+let presenceClient = null;
 
 
-let statusSubscription = null;
+let presenceSubscription = null;
 
+
+
+let subscriptions = [];
+
+
+
+let connected = false;
 
 
 
@@ -26,24 +36,50 @@ let pendingRead = [];
 
 
 
+
+
+
+/*
+================================================
+CONNEXION CHAT WEBSOCKET
+================================================
+*/
+
+
 export function connectWebSocket(
+
     conversationId,
+
     currentUserId,
+
     onMessageReceived,
-    onStatusReceived
+
+    onStatusReceived,
+
+    onTypingReceived
+
 ){
 
 
+
     const token =
+
         localStorage.getItem("token");
+
+
+
 
 
 
     if(stompClient){
 
+
         disconnectWebSocket();
 
+
     }
+
+
 
 
 
@@ -53,12 +89,22 @@ export function connectWebSocket(
     stompClient = new Client({
 
 
-        webSocketFactory:()=>
 
 
-            new SockJS(
+
+        webSocketFactory:()=>{
+
+
+            return new SockJS(
+
                 "http://localhost:8081/ws"
-            ),
+
+            );
+
+
+        },
+
+
 
 
 
@@ -66,10 +112,13 @@ export function connectWebSocket(
 
 
             Authorization:
+
             `Bearer ${token}`
 
 
         },
+
+
 
 
 
@@ -79,92 +128,41 @@ export function connectWebSocket(
 
 
 
-        onConnect:()=>{
+
+        debug:(msg)=>{
 
 
             console.log(
-                "STOMP CONNECTED"
+                "STOMP",
+                msg
             );
 
 
+        },
 
 
 
-            currentSubscription =
-
-            stompClient.subscribe(
-
-
-                `/topic/conversation/${conversationId}`,
-
-
-                message=>{
-
-
-                    const data =
-                    JSON.parse(
-                        message.body
-                    );
 
 
 
-                    console.log(
-                        "MESSAGE RECU",
-                        data
-                    );
 
 
 
-                    onMessageReceived(
-                        data
-                    );
+        onConnect:()=>{
 
 
-                }
 
+            console.log(
+
+                "CHAT WEBSOCKET CONNECTE"
 
             );
 
 
 
 
+            connected=true;
 
-
-
-            statusSubscription =
-
-            stompClient.subscribe(
-
-
-                `/topic/message-status/${currentUserId}`,
-
-
-                message=>{
-
-
-                    const data =
-                    JSON.parse(
-                        message.body
-                    );
-
-
-
-                    console.log(
-                        "STATUS RECU",
-                        data
-                    );
-
-
-
-                    onStatusReceived(
-                        data
-                    );
-
-
-                }
-
-
-            );
 
 
 
@@ -172,7 +170,187 @@ export function connectWebSocket(
 
 
             /*
-              Envoi des statuts bloqués
+            =================================
+            MESSAGES
+            =================================
+            */
+
+
+            const messageSub =
+
+
+            stompClient.subscribe(
+
+
+
+                `/topic/conversation/${conversationId}`,
+
+
+
+                frame=>{
+
+
+                    const data = JSON.parse(
+
+                        frame.body
+
+                    );
+
+
+
+                    console.log(
+
+                        "MESSAGE RECU",
+
+                        data
+
+                    );
+
+
+
+                    onMessageReceived(
+
+                        data
+
+                    );
+
+
+                }
+
+
+            );
+
+
+
+
+
+
+
+
+
+            /*
+            =================================
+            STATUS MESSAGE ✓✓
+            =================================
+            */
+
+
+            const statusSub =
+
+
+            stompClient.subscribe(
+
+
+
+                `/topic/message-status/${currentUserId}`,
+
+
+
+                frame=>{
+
+
+                    const data = JSON.parse(
+
+                        frame.body
+
+                    );
+
+
+
+                    console.log(
+
+                        "MESSAGE STATUS",
+
+                        data
+
+                    );
+
+
+
+                    onStatusReceived(
+
+                        data
+
+                    );
+
+
+
+                }
+
+
+            );
+
+
+
+
+
+
+
+
+
+            /*
+            =================================
+            TYPING
+            =================================
+            */
+
+
+            const typingSub =
+
+
+            stompClient.subscribe(
+
+
+
+                `/topic/typing/${conversationId}`,
+
+
+
+                frame=>{
+
+
+                    onTypingReceived(
+
+                        frame.body
+
+                    );
+
+
+                }
+
+
+            );
+
+
+
+
+
+
+
+
+
+            subscriptions.push(
+
+                messageSub,
+
+                statusSub,
+
+                typingSub
+
+            );
+
+
+
+
+
+
+
+
+
+            /*
+            =================================
+            ENVOIS EN ATTENTE
+            =================================
             */
 
 
@@ -192,6 +370,9 @@ export function connectWebSocket(
 
 
 
+
+
+
             pendingRead.forEach(id=>{
 
 
@@ -206,11 +387,51 @@ export function connectWebSocket(
 
 
 
+        },
+
+
+
+
+
+
+
+
+
+        onDisconnect:()=>{
+
+
+            connected=false;
+
+
+        },
+
+
+
+
+
+
+
+
+
+        onStompError:(error)=>{
+
+
+            console.error(
+
+                "STOMP ERROR",
+
+                error
+
+            );
+
+
         }
 
 
 
     });
+
+
 
 
 
@@ -229,24 +450,313 @@ export function connectWebSocket(
 
 
 
+
+
+
+
+
+/*
+================================================
+PRESENCE ONLINE / OFFLINE
+================================================
+*/
+
+
+export function connectPresence(onStatus){
+
+
+
+    const token =
+
+        localStorage.getItem("token");
+
+
+
+
+
+
+
+    if(presenceClient){
+
+
+        disconnectPresence();
+
+
+    }
+
+
+
+
+
+
+
+
+
+    presenceClient = new Client({
+
+
+
+
+
+
+        webSocketFactory:()=>{
+
+
+            return new SockJS(
+
+                "http://localhost:8081/ws"
+
+            );
+
+
+        },
+
+
+
+
+
+
+
+        connectHeaders:{
+
+
+            Authorization:
+
+            `Bearer ${token}`
+
+
+        },
+
+
+
+
+
+
+
+
+        reconnectDelay:5000,
+
+
+
+
+
+
+
+
+
+        debug:(msg)=>{
+
+
+            console.log(
+
+                "PRESENCE",
+
+                msg
+
+            );
+
+
+        },
+
+
+
+
+
+
+
+
+
+        onConnect:()=>{
+
+
+
+            console.log(
+
+                "PRESENCE CONNECTEE"
+
+            );
+
+
+
+
+
+
+
+            presenceSubscription =
+
+
+            presenceClient.subscribe(
+
+
+
+                "/topic/users-status",
+
+
+
+                frame=>{
+
+
+
+                    const data = JSON.parse(
+
+                        frame.body
+
+                    );
+
+
+
+
+
+
+
+                    console.log(
+
+                        "STATUS USER",
+
+                        data
+
+                    );
+
+
+
+
+
+
+
+                    onStatus(data);
+
+
+
+
+                }
+
+
+
+            );
+
+
+
+
+
+        }
+
+
+
+
+
+
+    });
+
+
+
+
+
+
+
+    presenceClient.activate();
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function disconnectPresence(){
+
+
+
+    if(presenceSubscription){
+
+
+        presenceSubscription.unsubscribe();
+
+
+        presenceSubscription=null;
+
+
+    }
+
+
+
+
+
+
+
+
+    if(presenceClient){
+
+
+        presenceClient.deactivate();
+
+
+        presenceClient=null;
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+================================================
+ENVOYER MESSAGE
+================================================
+*/
+
+
 export function sendMessage(
+
     conversationId,
+
     content
+
 ){
 
 
-    if(
-        !stompClient ||
-        !stompClient.connected
-    ){
+
+    if(!connected){
+
+
 
         console.log(
-            "STOMP pas connecté"
+
+            "WEBSOCKET NON CONNECTE"
+
         );
+
 
         return;
 
+
     }
+
+
+
 
 
 
@@ -254,13 +764,18 @@ export function sendMessage(
     stompClient.publish({
 
 
+
         destination:
+
         "/app/chat.send",
 
 
 
-        body:
-        JSON.stringify({
+
+
+
+        body:JSON.stringify({
+
 
 
             conversationId,
@@ -269,6 +784,7 @@ export function sendMessage(
             content
 
 
+
         })
 
 
@@ -288,37 +804,46 @@ export function sendMessage(
 
 
 
-export function sendDelivered(
-    messageId
-){
 
 
 
-    if(
-        !stompClient ||
-        !stompClient.connected
-    ){
+/*
+================================================
+MESSAGE LIVRE ✓✓ GRIS
+================================================
+*/
 
 
-        console.log(
-            "Delivered en attente",
-            messageId
-        );
+export function sendDelivered(messageId){
+
+
+
+    if(!connected){
+
 
 
         pendingDelivered.push(
+
             messageId
+
         );
+
 
 
         return;
 
+
     }
+
+
+
 
 
 
     sendDeliveredNow(
+
         messageId
+
     );
 
 
@@ -331,25 +856,30 @@ export function sendDelivered(
 
 
 
-function sendDeliveredNow(
-    messageId
-){
+
+function sendDeliveredNow(messageId){
 
 
 
     stompClient.publish({
 
 
+
         destination:
+
         "/app/message.delivered",
 
 
 
-        body:
-        JSON.stringify({
+
+
+
+        body:JSON.stringify({
+
 
 
             messageId
+
 
 
         })
@@ -370,40 +900,49 @@ function sendDeliveredNow(
 
 
 
-export function sendRead(
-    messageId
-){
 
 
 
-    if(
-        !stompClient ||
-        !stompClient.connected
-    ){
+
+/*
+================================================
+MESSAGE LU ✓✓ BLEU
+================================================
+*/
+
+
+export function sendRead(messageId){
 
 
 
-        console.log(
-            "Read en attente",
-            messageId
-        );
+    if(!connected){
 
 
 
         pendingRead.push(
+
             messageId
+
         );
 
 
+
         return;
+
 
     }
 
 
 
+
+
+
     sendReadNow(
+
         messageId
+
     );
+
 
 
 }
@@ -415,25 +954,29 @@ export function sendRead(
 
 
 
-function sendReadNow(
-    messageId
-){
+function sendReadNow(messageId){
 
 
 
     stompClient.publish({
 
 
+
         destination:
+
         "/app/message.read",
 
 
 
-        body:
-        JSON.stringify({
+
+
+
+        body:JSON.stringify({
+
 
 
             messageId
+
 
 
         })
@@ -452,38 +995,119 @@ function sendReadNow(
 
 
 
+
+
+
+
+
+/*
+================================================
+TYPING
+================================================
+*/
+
+
+export function sendTyping(conversationId){
+
+
+
+    if(!connected){
+
+
+        return;
+
+
+    }
+
+
+
+
+
+
+
+    stompClient.publish({
+
+
+
+        destination:
+
+        "/app/chat.typing",
+
+
+
+
+
+
+        body:JSON.stringify({
+
+
+
+            conversationId
+
+
+
+        })
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+================================================
+DECONNEXION CHAT
+================================================
+*/
 
 
 export function disconnectWebSocket(){
 
 
 
+    subscriptions.forEach(sub=>{
+
+
+        sub.unsubscribe();
+
+
+    });
+
+
+
+
+    subscriptions=[];
+
+
+
+
+
+
     pendingDelivered=[];
+
 
     pendingRead=[];
 
 
 
 
-    if(currentSubscription){
-
-        currentSubscription.unsubscribe();
-
-        currentSubscription=null;
-
-    }
 
 
+    connected=false;
 
-
-
-    if(statusSubscription){
-
-        statusSubscription.unsubscribe();
-
-        statusSubscription=null;
-
-    }
 
 
 
@@ -492,10 +1116,13 @@ export function disconnectWebSocket(){
     if(stompClient){
 
 
+
         stompClient.deactivate();
 
 
+
         stompClient=null;
+
 
 
     }

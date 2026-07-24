@@ -9,11 +9,13 @@ public class PasswordGenerator {
         BCryptPasswordEncoder encoder =
                 new BCryptPasswordEncoder();
 
-        String password = "Jean1234";
+        System.out.println(
+            "ivana = " + encoder.encode("ivana")
+        );
 
-        String hash = encoder.encode(password);
+        System.out.println(
+            "pristile = " + encoder.encode("pristile")
+        );
 
-        System.out.println("Mot de passe : " + password);
-        System.out.println("Hash BCrypt : " + hash);
     }
 }

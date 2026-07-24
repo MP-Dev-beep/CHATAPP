@@ -2,7 +2,8 @@ import {
     createContext,
     useContext,
     useState,
-    useEffect
+    useEffect,
+    useRef
 } from "react";
 
 
@@ -31,7 +32,11 @@ import {
 
 
 
+
 const ConversationContext = createContext();
+
+
+
 
 
 
@@ -40,25 +45,46 @@ const ConversationContext = createContext();
 export function ConversationProvider({children}){
 
 
-    const {
-        user
-    } = useUsers();
+    const {user} = useUsers();
+
+
+
+    const [
+        conversations,
+        setConversations
+    ] = useState([]);
 
 
 
 
-    const [conversations,setConversations] =
-        useState([]);
+    const [
+        conversationId,
+        setConversationId
+    ] = useState(null);
 
 
 
-    const [conversationId,setConversationId] =
-        useState(null);
+
+    const [
+        messages,
+        setMessages
+    ] = useState([]);
 
 
 
-    const [messages,setMessages] =
-        useState([]);
+
+    const [
+        typingUser,
+        setTypingUser
+    ] = useState(null);
+
+
+
+    const typingTimer = useRef(null);
+
+
+
+
 
 
 
@@ -70,9 +96,7 @@ export function ConversationProvider({children}){
         try{
 
 
-            const data =
-                await getConversations();
-
+            const data = await getConversations();
 
 
             setConversations(
@@ -85,7 +109,7 @@ export function ConversationProvider({children}){
 
 
             console.error(
-                "Erreur chargement conversations",
+                "Erreur conversations",
                 error
             );
 
@@ -94,6 +118,7 @@ export function ConversationProvider({children}){
 
 
     }
+
 
 
 
@@ -113,15 +138,25 @@ export function ConversationProvider({children}){
 
 
 
+
+
         setConversationId(id);
+
+
 
 
 
         try{
 
 
-            const history =
-                await getMessages(id);
+            /*
+            ===========================
+            CHARGEMENT HISTORIQUE
+            ===========================
+            */
+
+
+            const history = await getMessages(id);
 
 
 
@@ -131,37 +166,16 @@ export function ConversationProvider({children}){
 
 
 
+
+
+
+
+
             /*
-                Quand on ouvre une conversation,
-                on marque les messages reçus comme lus
+            ===========================
+            CONNEXION WEBSOCKET
+            ===========================
             */
-
-
-            history.forEach(message=>{
-
-
-                if(
-                    message.senderId !== user.id
-                    &&
-                    !message.read
-                ){
-
-                    sendDelivered(
-                        message.id
-                    );
-
-
-                    sendRead(
-                        message.id
-                    );
-
-                }
-
-
-            });
-
-
-
 
 
             connectWebSocket(
@@ -174,52 +188,34 @@ export function ConversationProvider({children}){
 
 
 
+                /*
+                NOUVEAU MESSAGE
+                */
+
+
                 (message)=>{
-
-
-                    console.log(
-                        "NOUVEAU MESSAGE",
-                        message
-                    );
-
-
-
-                    /*
-                       Réception côté destinataire
-                       => reçu
-                    */
-
-
-                    if(
-                        message.senderId !== user.id
-                    ){
-
-                        sendDelivered(
-                            message.id
-                        );
-
-                    }
-
-
 
 
 
                     setMessages(prev=>{
 
 
-                        const exists =
-                            prev.some(
-                                m =>
-                                m.id === message.id
-                            );
+                        const existe =
+
+                        prev.some(
+
+                            m=>m.id===message.id
+
+                        );
 
 
 
-                        if(exists){
+                        if(existe){
 
                             return prev;
 
                         }
+
 
 
 
@@ -232,11 +228,88 @@ export function ConversationProvider({children}){
                         ];
 
 
+
                     });
 
 
 
-                    loadConversations();
+
+
+
+                    /*
+                    MESSAGE RECU
+                    => ✓✓ GRIS
+                    */
+
+
+                    if(
+
+                        message.senderId !== user.id
+
+                    ){
+
+
+                        sendDelivered(
+
+                            message.id
+
+                        );
+
+
+                    }
+
+
+
+
+
+
+
+                    setConversations(prev=>
+
+
+
+                        prev.map(conv=>
+
+
+
+                            conv.id===id
+
+
+                            ?
+
+
+                            {
+
+
+                                ...conv,
+
+
+                                lastMessage:
+
+                                message.content,
+
+
+                                lastMessageTime:
+
+                                message.sentAt
+
+
+
+                            }
+
+
+                            :
+
+
+                            conv
+
+
+
+                        )
+
+
+
+                    );
 
 
 
@@ -246,66 +319,228 @@ export function ConversationProvider({children}){
 
 
 
+
+
+
+
+                /*
+                STATUS MESSAGE
+                */
+
+
                 (status)=>{
-
-
-                    console.log(
-                        "STATUS MESSAGE",
-                        status
-                    );
 
 
 
                     setMessages(prev=>
 
 
+
                         prev.map(message=>
 
 
-                            message.id === status.id
+
+                            message.id===status.id
+
 
                             ?
 
+
                             {
+
 
                                 ...message,
 
 
                                 delivered:
+
                                 status.delivered,
 
 
+
                                 read:
+
                                 status.read,
 
 
+
                                 deliveredAt:
+
                                 status.deliveredAt,
 
 
+
                                 readAt:
+
                                 status.readAt
+
+
 
                             }
 
 
                             :
 
+
                             message
 
 
+
                         )
+
 
 
                     );
 
 
 
-                    loadConversations();
+                },
+
+
+
+
+
+
+
+
+
+
+                /*
+                TYPING
+                */
+
+
+                (username)=>{
+
+
+
+                    setTypingUser(
+                        username
+                    );
+
+
+
+
+                    if(typingTimer.current){
+
+
+                        clearTimeout(
+                            typingTimer.current
+                        );
+
+
+                    }
+
+
+
+
+                    typingTimer.current =
+
+
+                    setTimeout(()=>{
+
+
+                        setTypingUser(null);
+
+
+                    },2000);
+
 
 
                 }
 
+
+
+            );
+
+
+
+
+
+
+
+
+
+            /*
+            ===========================
+            MARQUER LES MESSAGES COMME LUS
+            ===========================
+            */
+
+
+            history.forEach(message=>{
+
+
+                if(
+
+                    message.senderId !== user.id
+
+                    &&
+
+                    !message.read
+
+                ){
+
+
+
+                    sendRead(
+
+                        message.id
+
+                    );
+
+
+                }
+
+
+
+            });
+
+
+
+
+
+
+
+
+
+            /*
+            ===========================
+            RESET BADGE
+            ===========================
+            */
+
+
+            setConversations(prev=>
+
+
+                prev.map(conv=>
+
+
+                    conv.id===id
+
+
+                    ?
+
+
+                    {
+
+                        ...conv,
+
+                        unreadCount:0
+
+
+                    }
+
+
+                    :
+
+
+                    conv
+
+
+
+                )
 
 
             );
@@ -317,15 +552,23 @@ export function ConversationProvider({children}){
 
 
             console.error(
+
                 "Erreur ouverture conversation",
+
                 error
+
             );
 
 
         }
 
 
+
     }
+
+
+
+
 
 
 
@@ -349,10 +592,26 @@ export function ConversationProvider({children}){
 
 
 
+
         return ()=>{
 
 
             disconnectWebSocket();
+
+
+
+
+            if(typingTimer.current){
+
+
+                clearTimeout(
+
+                    typingTimer.current
+
+                );
+
+
+            }
 
 
         };
@@ -360,6 +619,8 @@ export function ConversationProvider({children}){
 
 
     },[user]);
+
+
 
 
 
@@ -379,6 +640,7 @@ export function ConversationProvider({children}){
             value={{
 
 
+
                 conversations,
 
 
@@ -388,22 +650,31 @@ export function ConversationProvider({children}){
                 messages,
 
 
+                typingUser,
+
+
                 setMessages,
 
 
                 openConversation,
 
 
-                loadConversations
+                loadConversations,
+
+
+                refreshConversations:loadConversations
+
 
 
             }}
+
 
 
         >
 
 
             {children}
+
 
 
         </ConversationContext.Provider>
@@ -422,12 +693,32 @@ export function ConversationProvider({children}){
 
 
 
+
 export function useConversation(){
 
 
-    return useContext(
+
+    const context = useContext(
         ConversationContext
     );
+
+
+
+    if(!context){
+
+
+        throw new Error(
+
+            "useConversation doit être utilisé dans ConversationProvider"
+
+        );
+
+
+    }
+
+
+
+    return context;
 
 
 }

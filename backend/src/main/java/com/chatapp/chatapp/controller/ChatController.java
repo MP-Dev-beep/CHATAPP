@@ -4,6 +4,8 @@ package com.chatapp.chatapp.controller;
 import com.chatapp.chatapp.dto.MessageRequest;
 import com.chatapp.chatapp.dto.MessageResponse;
 import com.chatapp.chatapp.dto.MessageStatusRequest;
+import com.chatapp.chatapp.dto.TypingRequest;
+
 import com.chatapp.chatapp.service.MessageService;
 
 
@@ -20,12 +22,9 @@ import java.security.Principal;
 
 
 
-
-
 @Controller
 @RequiredArgsConstructor
 public class ChatController {
-
 
 
 
@@ -40,19 +39,44 @@ public class ChatController {
 
 
 
+
+
+    /*
+    =====================================================
+        ENVOYER MESSAGE TEMPS REEL
+
+        React
+        |
+        /app/chat.send
+        |
+        sauvegarde BDD
+        |
+        diffusion conversation
+    =====================================================
+    */
+
+
     @MessageMapping("/chat.send")
     public void sendMessage(
+
+
             MessageRequest request,
+
+
             Principal principal
+
+
     ){
 
 
 
         if(principal == null){
 
+
             System.out.println(
-                "USER NULL"
+                    "WEBSOCKET utilisateur non connecté"
             );
+
 
             return;
 
@@ -62,26 +86,22 @@ public class ChatController {
 
 
 
+
         MessageResponse response =
+
 
                 messageService.sendMessage(
 
+
                         principal.getName(),
 
+
                         request
+
 
                 );
 
 
-
-
-
-
-        System.out.println(
-            "MESSAGE SEND : "
-            +
-            response.getId()
-        );
 
 
 
@@ -92,12 +112,17 @@ public class ChatController {
         messagingTemplate.convertAndSend(
 
 
+
                 "/topic/conversation/"
+
                 +
+
                 request.getConversationId(),
 
 
+
                 response
+
 
 
         );
@@ -112,20 +137,43 @@ public class ChatController {
 
 
 
+
+
+
+
+
+    /*
+    =====================================================
+        MESSAGE LIVRE
+        ✓✓ GRIS
+    =====================================================
+    */
 
 
     @MessageMapping("/message.delivered")
     public void delivered(
-            MessageStatusRequest request
+
+
+
+            MessageStatusRequest request,
+
+
+            Principal principal
+
+
+
     ){
 
 
 
-        System.out.println(
-            "MESSAGE DELIVERED : "
-            +
-            request.getMessageId()
-        );
+        if(principal == null){
+
+
+            return;
+
+
+        }
+
 
 
 
@@ -134,11 +182,23 @@ public class ChatController {
 
         MessageResponse response =
 
+
                 messageService.markAsDelivered(
 
-                        request.getMessageId()
+
+
+                        request.getMessageId(),
+
+
+
+                        principal.getName()
+
+
 
                 );
+
+
+
 
 
 
@@ -148,15 +208,21 @@ public class ChatController {
         messagingTemplate.convertAndSend(
 
 
+
                 "/topic/message-status/"
+
                 +
+
                 response.getSenderId(),
+
 
 
                 response
 
 
+
         );
+
 
 
 
@@ -168,20 +234,43 @@ public class ChatController {
 
 
 
+
+
+
+
+
+    /*
+    =====================================================
+        MESSAGE LU
+        ✓✓ BLEU
+    =====================================================
+    */
 
 
     @MessageMapping("/message.read")
     public void read(
-            MessageStatusRequest request
+
+
+
+            MessageStatusRequest request,
+
+
+            Principal principal
+
+
+
     ){
 
 
 
-        System.out.println(
-            "MESSAGE READ : "
-            +
-            request.getMessageId()
-        );
+        if(principal == null){
+
+
+            return;
+
+
+        }
+
 
 
 
@@ -191,11 +280,22 @@ public class ChatController {
 
         MessageResponse response =
 
+
                 messageService.markAsRead(
 
-                        request.getMessageId()
+
+
+                        request.getMessageId(),
+
+
+
+                        principal.getName()
+
+
 
                 );
+
+
 
 
 
@@ -206,12 +306,90 @@ public class ChatController {
         messagingTemplate.convertAndSend(
 
 
+
                 "/topic/message-status/"
+
                 +
+
                 response.getSenderId(),
 
 
+
                 response
+
+
+
+        );
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+    =====================================================
+        UTILISATEUR ECRIT
+        "X est en train d'écrire..."
+    =====================================================
+    */
+
+
+    @MessageMapping("/chat.typing")
+    public void typing(
+
+
+
+            TypingRequest request,
+
+
+            Principal principal
+
+
+
+    ){
+
+
+
+        if(principal == null){
+
+
+            return;
+
+
+        }
+
+
+
+
+
+
+
+
+        messagingTemplate.convertAndSend(
+
+
+
+                "/topic/typing/"
+
+                +
+
+                request.getConversationId(),
+
+
+
+                principal.getName()
+
 
 
         );
@@ -219,7 +397,6 @@ public class ChatController {
 
 
     }
-
 
 
 

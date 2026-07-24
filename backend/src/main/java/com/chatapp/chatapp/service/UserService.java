@@ -15,13 +15,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
 
 
     private final UserRepository userRepository;
@@ -32,16 +35,24 @@ public class UserService {
 
 
 
-    // ==========================
+
+
+
+
+
+
+    // =====================================
     // INSCRIPTION
-    // ==========================
+    // =====================================
 
-    public UserResponse register(
+    public AuthResponse register(
             RegisterRequest request
-    ) {
+    ){
 
 
-        if(userRepository.existsByEmail(request.getEmail())) {
+
+        if(userRepository.existsByEmail(request.getEmail())){
+
 
             throw new RuntimeException(
                     "Email déjà utilisé"
@@ -51,13 +62,23 @@ public class UserService {
 
 
 
+
+
+
+
         User user = User.builder()
 
-                .firstname(request.getFirstname())
+                .firstname(
+                        request.getFirstname()
+                )
 
-                .lastname(request.getLastname())
+                .lastname(
+                        request.getLastname()
+                )
 
-                .email(request.getEmail())
+                .email(
+                        request.getEmail()
+                )
 
                 .password(
                         passwordEncoder.encode(
@@ -65,28 +86,57 @@ public class UserService {
                         )
                 )
 
+                .avatar(null)
+
+
+                /*
+                ===============================
+                IMPORTANT
+                USER PAS ONLINE ICI
+                ===============================
+                */
+
                 .online(false)
 
                 .build();
 
 
 
-        User savedUser =
+
+
+
+
+        User saved =
+
                 userRepository.save(user);
 
 
 
-        return UserResponse.builder()
 
-                .id(savedUser.getId())
 
-                .firstname(savedUser.getFirstname())
 
-                .lastname(savedUser.getLastname())
 
-                .email(savedUser.getEmail())
+        String token =
+
+                jwtService.generateToken(
+                        saved.getEmail()
+                );
+
+
+
+
+
+
+
+        return AuthResponse.builder()
+
+                .token(token)
+
+                .user(convert(saved))
 
                 .build();
+
+
 
     }
 
@@ -95,71 +145,51 @@ public class UserService {
 
 
 
-    // ==========================
-    // LOGIN JWT
-    // ==========================
+
+
+
+
+
+
+
+    // =====================================
+    // LOGIN
+    // =====================================
 
     public AuthResponse login(
             LoginRequest request
-    ) {
-
-
-        System.out.println("======================");
-        System.out.println("TENTATIVE CONNEXION");
-        System.out.println("EMAIL : " + request.getEmail());
-        System.out.println("======================");
+    ){
 
 
 
         User user =
+
                 userRepository.findByEmail(
                         request.getEmail()
                 )
 
                 .orElseThrow(() ->
+
                         new RuntimeException(
                                 "Utilisateur introuvable"
                         )
+
                 );
 
 
 
-        System.out.println(
-                "UTILISATEUR TROUVE : "
-                +
-                user.getEmail()
-        );
 
 
-        System.out.println(
-                "HASH EN BASE : "
-                +
+
+
+        if(!passwordEncoder.matches(
+
+                request.getPassword(),
+
                 user.getPassword()
-        );
 
+        )){
 
-
-        boolean passwordCorrect =
-                passwordEncoder.matches(
-
-                        request.getPassword(),
-
-                        user.getPassword()
-
-                );
-
-
-
-        System.out.println(
-                "PASSWORD VALIDE : "
-                +
-                passwordCorrect
-        );
-
-
-
-
-        if(!passwordCorrect){
 
 
             throw new RuntimeException(
@@ -173,26 +203,36 @@ public class UserService {
 
 
 
+
+        /*
+        =====================================
+        NE PAS METTRE ONLINE ICI
+        =====================================
+
+        Le statut online vient du WebSocket
+
+        SessionConnectedEvent
+                 |
+                 |
+        PresenceService.online()
+
+        =====================================
+        */
+
+
+
+
+
+
+
         String token =
+
                 jwtService.generateToken(
                         user.getEmail()
                 );
 
 
 
-
-        UserResponse response =
-                UserResponse.builder()
-
-                        .id(user.getId())
-
-                        .firstname(user.getFirstname())
-
-                        .lastname(user.getLastname())
-
-                        .email(user.getEmail())
-
-                        .build();
 
 
 
@@ -202,9 +242,10 @@ public class UserService {
 
                 .token(token)
 
-                .user(response)
+                .user(convert(user))
 
                 .build();
+
 
 
     }
@@ -217,35 +258,25 @@ public class UserService {
 
 
 
-    // ==========================
-    // LISTE UTILISATEURS
-    // ==========================
 
 
-    public List<UserResponse> getAllUsers() {
+
+    // =====================================
+    // TOUS LES UTILISATEURS
+    // =====================================
+
+    public List<UserResponse> getAllUsers(){
+
 
 
         return userRepository.findAll()
 
                 .stream()
 
-                .map(user ->
-
-                        UserResponse.builder()
-
-                                .id(user.getId())
-
-                                .firstname(user.getFirstname())
-
-                                .lastname(user.getLastname())
-
-                                .email(user.getEmail())
-
-                                .build()
-
-                )
+                .map(this::convert)
 
                 .collect(Collectors.toList());
+
 
     }
 
@@ -257,42 +288,35 @@ public class UserService {
 
 
 
-    // ==========================
-    // RECHERCHE UTILISATEUR
-    // ==========================
 
+
+
+    // =====================================
+    // RECHERCHE
+    // =====================================
 
     public List<UserResponse> searchUsers(
             String keyword
-    ) {
+    ){
+
 
 
         return userRepository
 
                 .findByFirstnameContainingIgnoreCaseOrLastnameContainingIgnoreCase(
+
                         keyword,
+
                         keyword
+
                 )
 
                 .stream()
 
-                .map(user ->
-
-                        UserResponse.builder()
-
-                                .id(user.getId())
-
-                                .firstname(user.getFirstname())
-
-                                .lastname(user.getLastname())
-
-                                .email(user.getEmail())
-
-                                .build()
-
-                )
+                .map(this::convert)
 
                 .collect(Collectors.toList());
+
 
     }
 
@@ -305,78 +329,202 @@ public class UserService {
 
 
 
-    // ==========================
-    // UPDATE PROFIL
-    // ==========================
 
 
-    public UserResponse updateProfile(
-            String email,
-            UpdateProfileRequest request
-    ) {
+    // =====================================
+    // USER PAR EMAIL
+    // =====================================
+
+    public UserResponse getUserByEmail(
+            String email
+    ){
+
 
 
         User user =
+
                 userRepository.findByEmail(email)
 
                 .orElseThrow(() ->
+
                         new RuntimeException(
                                 "Utilisateur introuvable"
                         )
+
                 );
+
+
+
+
+        return convert(user);
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    // =====================================
+    // UPDATE PROFIL
+    // =====================================
+
+    public UserResponse updateProfile(
+
+            String email,
+
+            UpdateProfileRequest request
+
+    ){
+
+
+
+        User user =
+
+                userRepository.findByEmail(email)
+
+                .orElseThrow(() ->
+
+                        new RuntimeException(
+                                "Utilisateur introuvable"
+                        )
+
+                );
+
+
+
+
 
 
 
         if(request.getFirstname()!=null){
 
+
             user.setFirstname(
                     request.getFirstname()
             );
 
+
         }
+
+
+
+
+
 
 
 
         if(request.getLastname()!=null){
 
+
             user.setLastname(
                     request.getLastname()
             );
 
+
         }
+
+
+
+
+
 
 
 
         if(request.getAvatar()!=null){
 
+
             user.setAvatar(
                     request.getAvatar()
             );
+
 
         }
 
 
 
+
+
+
+
+
         User saved =
+
                 userRepository.save(user);
 
 
 
 
+
+
+
+
+        return convert(saved);
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    // =====================================
+    // ENTITY -> DTO
+    // =====================================
+
+    private UserResponse convert(
+            User user
+    ){
+
+
+
         return UserResponse.builder()
 
-                .id(saved.getId())
+                .id(
+                        user.getId()
+                )
 
-                .firstname(saved.getFirstname())
+                .firstname(
+                        user.getFirstname()
+                )
 
-                .lastname(saved.getLastname())
+                .lastname(
+                        user.getLastname()
+                )
 
-                .email(saved.getEmail())
+                .email(
+                        user.getEmail()
+                )
+
+                .avatar(
+                        user.getAvatar()
+                )
+
+                .online(
+                        user.isOnline()
+                )
 
                 .build();
 
 
+
     }
+
 
 
 }

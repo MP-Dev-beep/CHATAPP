@@ -31,13 +31,18 @@ import java.util.List;
 public class ConversationService {
 
 
-
     private final ConversationRepository conversationRepository;
 
     private final UserRepository userRepository;
 
 
 
+
+    /*
+    =================================================
+        CREATION CONVERSATION
+    =================================================
+    */
 
 
     public ConversationResponse createConversation(
@@ -46,8 +51,10 @@ public class ConversationService {
     ){
 
 
-        User currentUser = userRepository
-                .findByEmail(email)
+        User currentUser =
+
+                userRepository.findByEmail(email)
+
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Utilisateur connecté introuvable"
@@ -56,8 +63,13 @@ public class ConversationService {
 
 
 
-        User otherUser = userRepository
-                .findById(request.getUserId())
+
+        User otherUser =
+
+                userRepository.findById(
+                        request.getUserId()
+                )
+
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Utilisateur destinataire introuvable"
@@ -68,25 +80,50 @@ public class ConversationService {
 
 
 
+        if(currentUser.getId()
+                .equals(otherUser.getId())){
+
+
+            throw new RuntimeException(
+                    "Impossible de créer une conversation avec soi-même"
+            );
+
+        }
+
+
+
+
+
         return conversationRepository
+
                 .findConversationBetweenUsers(
                         currentUser.getId(),
                         otherUser.getId()
                 )
+
                 .map(this::convertToResponse)
+
                 .orElseGet(() -> {
 
 
                     Conversation conversation =
+
                             Conversation.builder()
-                                    .user1(currentUser)
-                                    .user2(otherUser)
-                                    .createdAt(LocalDateTime.now())
-                                    .build();
+
+                            .user1(currentUser)
+
+                            .user2(otherUser)
+
+                            .createdAt(
+                                    LocalDateTime.now()
+                            )
+
+                            .build();
 
 
 
                     Conversation saved =
+
                             conversationRepository.save(
                                     conversation
                             );
@@ -109,14 +146,23 @@ public class ConversationService {
 
 
 
+
+    /*
+    =================================================
+        CONVERSATIONS UTILISATEUR CONNECTE
+    =================================================
+    */
+
+
     public List<ConversationResponse> getUserConversations(
             String email
     ){
 
 
-
         User user =
+
                 userRepository.findByEmail(email)
+
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Utilisateur introuvable"
@@ -126,13 +172,33 @@ public class ConversationService {
 
 
 
+
         return conversationRepository
+
                 .findUserConversations(
                         user.getId()
                 )
+
                 .stream()
+
                 .map(this::convertToResponse)
+
+                .sorted(
+
+                        Comparator.comparing(
+
+                                ConversationResponse::getLastMessageTime,
+
+                                Comparator.nullsLast(
+                                        Comparator.reverseOrder()
+                                )
+
+                        )
+
+                )
+
                 .toList();
+
 
 
     }
@@ -145,52 +211,92 @@ public class ConversationService {
 
 
 
-    private ConversationResponse convertToResponse(
-            Conversation conversation
+    /*
+    =================================================
+        VERIFICATION ACCES CONVERSATION
+    =================================================
+    */
+
+
+    public boolean canAccessConversation(
+            Conversation conversation,
+            User user
     ){
 
 
-
-        String lastMessage = null;
-
-        LocalDateTime lastMessageTime = null;
-
+        return conversation.getUser1()
+                .getId()
+                .equals(user.getId())
 
 
+                ||
+
+                conversation.getUser2()
+                .getId()
+                .equals(user.getId());
 
 
-        if(conversation.getMessages()!=null
-                &&
-                !conversation.getMessages().isEmpty()
-        ){
-
-
-            Message message =
-
-                    conversation.getMessages()
-                            .stream()
-                            .filter(m ->
-                                    m.getSentAt()!=null
-                            )
-                            .max(
-                                    Comparator.comparing(
-                                            Message::getSentAt
-                                    )
-                            )
-                            .orElse(null);
+    }
 
 
 
-            if(message!=null){
-
-                lastMessage =
-                        message.getContent();
 
 
-                lastMessageTime =
-                        message.getSentAt();
 
-            }
+
+
+
+    /*
+    =================================================
+        RECUPERATION SECURISEE
+    =================================================
+    */
+
+
+    public Conversation getConversationForUser(
+            Long conversationId,
+            String email
+    ){
+
+
+        User user =
+
+                userRepository.findByEmail(email)
+
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Utilisateur introuvable"
+                        )
+                );
+
+
+
+
+        Conversation conversation =
+
+                conversationRepository.findById(
+                        conversationId
+                )
+
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Conversation introuvable"
+                        )
+                );
+
+
+
+
+
+        if(!canAccessConversation(
+                conversation,
+                user
+        )){
+
+
+            throw new RuntimeException(
+                    "Accès interdit à cette conversation"
+            );
 
 
         }
@@ -199,55 +305,123 @@ public class ConversationService {
 
 
 
-
-
-        return ConversationResponse.builder()
-
-
-                .id(
-                        conversation.getId()
-                )
-
-
-                .createdAt(
-                        conversation.getCreatedAt()
-                )
-
-
-                .users(
-
-                        List.of(
-
-                                convertUser(
-                                        conversation.getUser1()
-                                ),
-
-
-                                convertUser(
-                                        conversation.getUser2()
-                                )
-
-                        )
-
-                )
-
-
-                .lastMessage(
-                        lastMessage
-                )
-
-
-                .lastMessageTime(
-                        lastMessageTime
-                )
-
-
-                .build();
-
+        return conversation;
 
 
     }
 
+
+
+
+
+
+
+
+
+    /*
+=================================================
+    CONVERSION ENTITY -> DTO
+=================================================
+*/
+
+private ConversationResponse convertToResponse(
+        Conversation conversation
+){
+
+    String lastMessage = null;
+
+    LocalDateTime lastMessageTime = null;
+
+    long unreadCount = 0;
+
+
+
+    if (conversation.getMessages() != null
+            && !conversation.getMessages().isEmpty()) {
+
+        Message lastMessageEntity =
+
+                conversation.getMessages()
+
+                        .stream()
+
+                        .filter(message -> message.getSentAt() != null)
+
+                        .max(
+                                Comparator.comparing(
+                                        Message::getSentAt
+                                )
+                        )
+
+                        .orElse(null);
+
+
+
+        if (lastMessageEntity != null) {
+
+            lastMessage = lastMessageEntity.getContent();
+
+            lastMessageTime = lastMessageEntity.getSentAt();
+
+        }
+
+
+
+        unreadCount =
+
+                conversation.getMessages()
+
+                        .stream()
+
+                        .filter(message -> !message.isRead())
+
+                        .count();
+
+    }
+
+
+
+    return ConversationResponse.builder()
+
+            .id(
+                    conversation.getId()
+            )
+
+            .createdAt(
+                    conversation.getCreatedAt()
+            )
+
+            .users(
+
+                    List.of(
+
+                            convertUser(
+                                    conversation.getUser1()
+                            ),
+
+                            convertUser(
+                                    conversation.getUser2()
+                            )
+
+                    )
+
+            )
+
+            .lastMessage(
+                    lastMessage
+            )
+
+            .lastMessageTime(
+                    lastMessageTime
+            )
+
+            .unreadCount(
+                    unreadCount
+            )
+
+            .build();
+
+}
 
 
 
@@ -279,10 +453,19 @@ public class ConversationService {
                         user.getEmail()
                 )
 
+                .avatar(
+                        user.getAvatar()
+                )
+
+                .online(
+                        user.isOnline()
+                )
+
                 .build();
 
 
     }
+
 
 
 }

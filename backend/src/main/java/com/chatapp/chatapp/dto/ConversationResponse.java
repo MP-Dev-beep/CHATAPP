@@ -36,4 +36,15 @@ public class ConversationResponse {
 
 
 
+    /*
+     *
+     * Nombre de messages non lus
+     *
+     */
+
+
+    private long unreadCount;
+
+
+
 }

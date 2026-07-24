@@ -9,7 +9,8 @@ import {
 
 
 import {
-    sendMessage
+    sendMessage,
+    sendTyping
 } from "../services/websocket";
 
 
@@ -20,17 +21,46 @@ function MessageInput(){
 
 
 
-    const [content,setContent] =
-        useState("");
-
+    const [
+        content,
+        setContent
+    ] = useState("");
 
 
 
 
     const {
+
         conversationId
+
     } = useConversation();
 
+
+
+
+
+
+
+
+    function handleChange(value){
+
+
+        setContent(value);
+
+
+
+        if(conversationId){
+
+
+            sendTyping(
+                conversationId
+            );
+
+
+        }
+
+
+    }
 
 
 
@@ -43,26 +73,15 @@ function MessageInput(){
 
 
 
-        if(!content.trim()){
+        if(
+            !content.trim()
+            ||
+            !conversationId
+        ){
 
             return;
 
         }
-
-
-
-
-        if(!conversationId){
-
-            console.log(
-                "Aucune conversation"
-            );
-
-            return;
-
-        }
-
-
 
 
 
@@ -70,11 +89,15 @@ function MessageInput(){
 
         sendMessage(
 
+
             conversationId,
 
-            content
+
+            content.trim()
+
 
         );
+
 
 
 
@@ -92,61 +115,56 @@ function MessageInput(){
 
 
 
-
-
-    function handleKeyDown(e){
-
-
-
-        if(e.key==="Enter"){
-
-
-            handleSend();
-
-
-        }
-
-
-    }
-
-
-
-
-
-
-
-
-
     return (
 
 
         <div className="message-input">
 
 
+
+
+
             <input
 
-
-                type="text"
-
-
-                placeholder="Écrire un message..."
 
 
                 value={content}
 
 
 
+                placeholder="Écrire un message..."
+
+
+
                 onChange={
+
                     e=>
-                    setContent(
+
+                    handleChange(
                         e.target.value
                     )
+
                 }
 
 
 
+
                 onKeyDown={
-                    handleKeyDown
+
+                    e=>{
+
+
+                        if(
+                            e.key==="Enter"
+                        ){
+
+                            handleSend();
+
+                        }
+
+
+                    }
+
                 }
 
 
@@ -158,17 +176,18 @@ function MessageInput(){
 
 
 
+
             <button
 
-                onClick={
-                    handleSend
-                }
+                onClick={handleSend}
 
             >
 
                 Envoyer
 
             </button>
+
+
 
 
 

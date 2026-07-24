@@ -25,59 +25,100 @@ import java.util.List;
 public class ConversationController {
 
 
+
     private final ConversationService conversationService;
 
 
 
-    // =====================================
-    // LISTE DES CONVERSATIONS
-    // GET /api/conversations
-    // =====================================
+
+
+    /*
+     *
+     * LISTE DES CONVERSATIONS UTILISATEUR
+     *
+     * GET /api/conversations
+     *
+     */
+
 
     @GetMapping
     public ResponseEntity<List<ConversationResponse>> getConversations(
+
             Authentication authentication
+
     ){
 
 
+
         String email =
+
                 authentication.getName();
 
 
+
+
+
         return ResponseEntity.ok(
+
                 conversationService.getUserConversations(
+
                         email
+
                 )
+
         );
+
 
     }
 
 
 
 
-    // =====================================
-    // CREER CONVERSATION
-    // POST /api/conversations
-    // =====================================
+
+
+
+
+
+    /*
+     *
+     * CREATION CONVERSATION
+     *
+     * POST /api/conversations
+     *
+     */
+
 
     @PostMapping
     public ResponseEntity<ConversationResponse> createConversation(
+
             Authentication authentication,
+
             @RequestBody CreateConversationRequest request
+
     ){
 
 
+
         String email =
+
                 authentication.getName();
 
 
 
+
+
         return ResponseEntity.ok(
+
                 conversationService.createConversation(
+
                         email,
+
                         request
+
                 )
+
         );
+
 
     }
 

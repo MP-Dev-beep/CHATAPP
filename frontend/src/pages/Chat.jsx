@@ -10,40 +10,43 @@ import "../styles/chat.css";
 function Chat(){
 
 
-return (
-
-<div className="chat-container">
+    return (
 
 
-<Sidebar />
+        <div className="chat-container">
 
 
-
-<div className="chat-window">
-
-
-<ChatHeader />
+            <Sidebar />
 
 
 
-<MessageList />
+            <div className="chat-window">
+
+
+                <ChatHeader />
 
 
 
-<MessageInput />
+                <MessageList />
 
 
 
-</div>
+                <MessageInput />
 
 
 
-</div>
+            </div>
 
-);
 
+
+        </div>
+
+
+    );
 
 
 }
+
+
 
 export default Chat;

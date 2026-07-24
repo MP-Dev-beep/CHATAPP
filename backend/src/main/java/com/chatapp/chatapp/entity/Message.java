@@ -9,12 +9,12 @@ import java.time.LocalDateTime;
 
 
 @Entity
+@Table(name = "messages")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "message")
 public class Message {
 
 
@@ -31,26 +31,34 @@ public class Message {
 
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "conversation_id")
+    @JoinColumn(
+            name = "conversation_id",
+            nullable = false
+    )
     private Conversation conversation;
 
 
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id")
+    @JoinColumn(
+            name = "sender_id",
+            nullable = false
+    )
     private User sender;
 
 
 
+    @Column(nullable = false)
     private LocalDateTime sentAt;
 
 
 
     /*
-     * Message arrivé chez le destinataire
+     * Message livré au destinataire
      * ✓✓ gris
      */
     @Builder.Default
+    @Column(nullable = false)
     private boolean delivered = false;
 
 
@@ -60,15 +68,28 @@ public class Message {
 
 
     /*
-     * Message lu par le destinataire
+     * Message lu
      * ✓✓ bleu
      */
     @Builder.Default
+    @Column(nullable = false)
     private boolean read = false;
 
 
 
     private LocalDateTime readAt;
 
+
+
+    @PrePersist
+    public void beforeSave(){
+
+        if(sentAt == null){
+
+            sentAt = LocalDateTime.now();
+
+        }
+
+    }
 
 }
