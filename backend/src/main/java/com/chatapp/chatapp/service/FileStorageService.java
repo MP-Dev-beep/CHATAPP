@@ -2,13 +2,11 @@ package com.chatapp.chatapp.service;
 
 
 import org.springframework.stereotype.Service;
-
 import org.springframework.web.multipart.MultipartFile;
 
 
 import java.io.IOException;
 import java.nio.file.*;
-
 import java.util.UUID;
 
 
@@ -17,11 +15,8 @@ import java.util.UUID;
 public class FileStorageService {
 
 
-
     private final Path rootLocation =
             Paths.get("uploads");
-
-
 
 
 
@@ -31,34 +26,21 @@ public class FileStorageService {
 
         try{
 
-
             if(!Files.exists(rootLocation)){
 
-
-                Files.createDirectories(
-                        rootLocation
-                );
-
+                Files.createDirectories(rootLocation);
 
             }
 
-
         }
-
         catch(IOException e){
 
-
             throw new RuntimeException(
-
-                    "Impossible de créer le dossier uploads",
-
+                    "Erreur création uploads",
                     e
-
             );
 
-
         }
-
 
     }
 
@@ -68,79 +50,40 @@ public class FileStorageService {
 
 
 
-
-
-
-    public String storeFile(
-
-            MultipartFile file
-
-    ){
-
+    public String storeFile(MultipartFile file){
 
 
         try{
 
 
-            String originalName =
-
+            String original =
                     file.getOriginalFilename();
 
 
+            String extension="";
 
 
-
-            String extension = "";
-
-
-
-            if(originalName != null && originalName.contains(".")){
+            if(original!=null && original.contains(".")){
 
 
                 extension =
-
-                        originalName.substring(
-
-                                originalName.lastIndexOf(".")
-
+                        original.substring(
+                                original.lastIndexOf(".")
                         );
-
 
             }
 
 
 
-
-
-
-
-            String fileName =
-
+            String filename =
                     UUID.randomUUID()
-
                     +
-
                     extension;
 
 
 
-
-
-
-
-
-
             Path destination =
-
-                    rootLocation.resolve(
-
-                            fileName
-
-                    );
-
-
-
-
+                    rootLocation.resolve(filename);
 
 
 
@@ -158,35 +101,20 @@ public class FileStorageService {
 
 
 
-
-
-
-
-
-            return "/uploads/" + fileName;
-
-
+            return "/uploads/"+filename;
 
 
 
         }
-
         catch(IOException e){
 
 
-
             throw new RuntimeException(
-
-                    "Erreur sauvegarde fichier",
-
+                    "Erreur upload",
                     e
-
             );
 
-
         }
-
-
 
 
     }
@@ -196,66 +124,26 @@ public class FileStorageService {
 
 
 
+    public String detectType(String contentType){
 
 
-
-    public void deleteFile(
-
-            String fileUrl
-
-    ){
+        if(contentType==null)
+            return "DOCUMENT";
 
 
-
-        try{
-
-
-            if(fileUrl == null){
-
-                return;
-
-            }
+        if(contentType.startsWith("image"))
+            return "IMAGE";
 
 
+        if(contentType.startsWith("video"))
+            return "VIDEO";
 
 
+        if(contentType.startsWith("audio"))
+            return "AUDIO";
 
 
-            Path file =
-
-                    Paths.get(
-
-                            fileUrl.replace(
-
-                                    "/uploads/",
-
-                                    "uploads/"
-
-                            )
-
-                    );
-
-
-
-
-
-            Files.deleteIfExists(file);
-
-
-
-        }
-
-        catch(IOException e){
-
-
-            System.out.println(
-
-                    "Erreur suppression fichier"
-
-            );
-
-
-        }
+        return "DOCUMENT";
 
 
     }

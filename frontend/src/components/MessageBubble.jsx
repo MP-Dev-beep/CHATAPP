@@ -7,8 +7,6 @@ import {
 
 
 
-
-
 function MessageBubble({
 
     message
@@ -16,14 +14,11 @@ function MessageBubble({
 }){
 
 
-
     const {
 
         user
 
     } = useUsers();
-
-
 
 
 
@@ -43,8 +38,6 @@ function MessageBubble({
 
 
 
-
-
     function formatTime(date){
 
 
@@ -53,26 +46,24 @@ function MessageBubble({
             return "";
 
 
-
         return new Date(date)
 
-            .toLocaleTimeString(
+        .toLocaleTimeString(
 
-                [],
+            [],
 
-                {
+            {
 
-                    hour:"2-digit",
+                hour:"2-digit",
 
-                    minute:"2-digit"
+                minute:"2-digit"
 
-                }
+            }
 
-            );
+        );
 
 
     }
-
 
 
 
@@ -84,7 +75,6 @@ function MessageBubble({
     function renderStatus(){
 
 
-
         if(!isMine)
 
             return null;
@@ -93,33 +83,50 @@ function MessageBubble({
 
 
 
-
         if(!message.delivered){
 
 
-            return <span className="status sent">
-                ✓
-            </span>;
+            return (
+
+                <span className="status">
+
+                    ✓
+
+                </span>
+
+            );
+
 
         }
+
 
 
 
 
 
         if(
+
             message.delivered
+
             &&
+
             !message.read
+
         ){
 
 
-            return <span className="status delivered">
-                ✓✓
-            </span>;
+            return (
+
+                <span className="status">
+
+                    ✓✓
+
+                </span>
+
+            );
+
 
         }
-
 
 
 
@@ -129,18 +136,46 @@ function MessageBubble({
         if(message.read){
 
 
-            return <span className="status read">
-                ✓✓
-            </span>;
+            return (
+
+                <span className="status read">
+
+                    ✓✓
+
+                </span>
+
+            );
+
 
         }
 
 
 
-        return null;
-
-
     }
+
+
+
+
+
+
+
+
+
+    const fileUrl =
+
+        message.fileUrl
+
+        ?
+
+        "http://localhost:8081"
+
+        +
+
+        message.fileUrl
+
+        :
+
+        null;
 
 
 
@@ -153,210 +188,220 @@ function MessageBubble({
     return(
 
 
+<div
 
-        <div
+className={
 
+isMine
 
+?
 
-            className={
+"message my-message"
 
-                isMine
+:
 
-                ?
+"message other-message"
 
-                "message my-message"
+}
 
-                :
 
-                "message other-message"
+>
 
-            }
 
 
+<div className="bubble">
 
-        >
 
 
 
 
 
 
+{
+message.content &&
 
-            <div className="bubble">
 
+<p>
 
+{message.content}
 
+</p>
 
 
+}
 
 
-                {
-                message.content &&
 
 
-                <p>
 
-                    {message.content}
 
 
-                </p>
 
-                }
 
 
 
 
+{
+message.fileType==="IMAGE"
 
+&&
 
 
+<img
 
-                {
-                message.fileType==="IMAGE" &&
+src={fileUrl}
 
+alt={message.fileName}
 
-                <img
+className="message-image"
 
+/>
 
-                    src={
+}
 
-                        "http://localhost:8081"
 
-                        +
 
-                        message.fileUrl
 
-                    }
 
 
-                    className="message-image"
 
 
-                    alt={message.fileName}
 
+{
+message.fileType==="VIDEO"
 
-                />
+&&
 
-                }
 
+<video
 
+controls
 
+className="message-video"
 
+>
 
 
+<source
 
+src={fileUrl}
 
+/>
 
-                {
-                message.fileType==="VIDEO" &&
 
+</video>
 
-                <video
 
-                    controls
+}
 
-                    className="message-video"
 
 
-                >
 
-                    <source
 
-                        src={
-                            "http://localhost:8081"
-                            +
-                            message.fileUrl
-                        }
 
-                    />
 
 
-                </video>
 
+{
+message.fileType==="AUDIO"
 
-                }
+&&
 
 
+<audio
 
+controls
 
+>
 
 
+<source
 
+src={fileUrl}
 
-                {
-                message.fileType==="DOCUMENT" &&
+/>
 
 
-                <a
+</audio>
 
-                    href={
-                        "http://localhost:8081"
-                        +
-                        message.fileUrl
-                    }
 
+}
 
-                    target="_blank"
 
-                >
 
-                    📄 {message.fileName}
 
 
-                </a>
 
 
-                }
 
 
+{
+message.fileType==="DOCUMENT"
 
+&&
 
 
+<a
 
+href={fileUrl}
 
+target="_blank"
 
-                <div className="message-info">
+rel="noreferrer"
 
+>
 
+📄 {message.fileName}
 
-                    <span>
 
+</a>
 
-                        {
-                        formatTime(
-                            message.sentAt
-                        )
-                        }
 
+}
 
-                    </span>
 
 
 
 
 
-                    {
-                    renderStatus()
-                    }
 
 
 
-                </div>
+<div className="message-info">
 
 
+<span>
 
+{formatTime(message.sentAt)}
 
+</span>
 
-            </div>
 
 
+{
+renderStatus()
 
+}
 
 
+</div>
 
-        </div>
 
 
-    );
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+);
+
 
 
 }

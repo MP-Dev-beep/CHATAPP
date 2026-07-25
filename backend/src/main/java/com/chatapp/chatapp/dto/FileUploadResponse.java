@@ -21,4 +21,7 @@ public class FileUploadResponse {
     private String fileUrl;
 
 
+    private Long size;
+
+
 }
