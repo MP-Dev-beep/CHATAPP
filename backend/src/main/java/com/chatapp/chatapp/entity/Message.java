@@ -25,9 +25,87 @@ public class Message {
 
 
 
-    @Column(nullable = false)
+
+
+    /*
+    =================================
+    TEXTE DU MESSAGE
+    =================================
+    */
+
+
+    @Column(nullable = true)
     private String content;
 
+
+
+
+
+
+
+    /*
+    =================================
+    FICHIER ATTACHE
+    =================================
+    */
+
+
+    /*
+    Nom original du fichier
+
+    Exemple:
+    photo.png
+    document.pdf
+    */
+
+    @Column(length = 255)
+    private String fileName;
+
+
+
+
+
+    /*
+    Type du fichier
+
+    Exemple:
+    IMAGE
+    PDF
+    VIDEO
+    AUDIO
+    DOCUMENT
+    */
+
+    @Column(length = 100)
+    private String fileType;
+
+
+
+
+
+    /*
+    Chemin accessible par React
+
+    Exemple:
+    /uploads/photo.png
+
+    */
+
+    @Column(length = 500)
+    private String fileUrl;
+
+
+
+
+
+
+
+
+    /*
+    =================================
+    CONVERSATION
+    =================================
+    */
 
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -39,6 +117,19 @@ public class Message {
 
 
 
+
+
+
+
+
+
+    /*
+    =================================
+    EXPEDITEUR
+    =================================
+    */
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "sender_id",
@@ -48,15 +139,38 @@ public class Message {
 
 
 
+
+
+
+
+
+
+    /*
+    =================================
+    DATE ENVOI
+    =================================
+    */
+
+
     @Column(nullable = false)
     private LocalDateTime sentAt;
 
 
 
+
+
+
+
+
+
     /*
-     * Message livré au destinataire
-     * ✓✓ gris
-     */
+    =================================
+    MESSAGE LIVRE
+    ✓✓ GRIS
+    =================================
+    */
+
+
     @Builder.Default
     @Column(nullable = false)
     private boolean delivered = false;
@@ -67,10 +181,20 @@ public class Message {
 
 
 
+
+
+
+
+
+
     /*
-     * Message lu
-     * ✓✓ bleu
-     */
+    =================================
+    MESSAGE LU
+    ✓✓ BLEU
+    =================================
+    */
+
+
     @Builder.Default
     @Column(nullable = false)
     private boolean read = false;
@@ -81,15 +205,34 @@ public class Message {
 
 
 
+
+
+
+
+
+
+    /*
+    =================================
+    CREATION AUTOMATIQUE
+    =================================
+    */
+
+
     @PrePersist
     public void beforeSave(){
 
+
         if(sentAt == null){
+
 
             sentAt = LocalDateTime.now();
 
+
         }
 
+
     }
+
+
 
 }

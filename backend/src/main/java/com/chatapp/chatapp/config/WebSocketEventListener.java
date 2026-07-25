@@ -3,15 +3,21 @@ package com.chatapp.chatapp.config;
 
 import com.chatapp.chatapp.service.PresenceService;
 
+
 import lombok.RequiredArgsConstructor;
 
+
 import org.springframework.context.event.EventListener;
+
 import org.springframework.stereotype.Component;
+
 
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
+
 import java.security.Principal;
+
 
 
 
@@ -28,10 +34,26 @@ public class WebSocketEventListener {
 
 
 
+
+    /*
+    =====================================
+    UTILISATEUR CONNECTE
+    =====================================
+    */
+
+
     @EventListener
-    public void handleConnect(
+    public void onConnected(
             SessionConnectedEvent event
     ){
+
+
+
+        System.out.println(
+                "========== WS SESSION CONNECTED =========="
+        );
+
+
 
 
         Principal principal =
@@ -43,12 +65,7 @@ public class WebSocketEventListener {
 
 
         System.out.println(
-                "===== SESSION CONNECTED ====="
-        );
-
-
-        System.out.println(
-                "PRINCIPAL : "
+                "PRINCIPAL CONNECT : "
                 +
                 principal
         );
@@ -70,6 +87,7 @@ public class WebSocketEventListener {
 
 
 
+
             System.out.println(
                     "USER ONLINE : "
                     +
@@ -80,18 +98,21 @@ public class WebSocketEventListener {
 
 
 
+
             presenceService.online(
                     email
             );
 
 
+
         }
 
-        else{
+        else {
+
 
 
             System.out.println(
-                    "PRINCIPAL NULL"
+                    "ERREUR : PRINCIPAL NULL"
             );
 
 
@@ -109,10 +130,29 @@ public class WebSocketEventListener {
 
 
 
+
+
+
+    /*
+    =====================================
+    UTILISATEUR DECONNECTE
+    =====================================
+    */
+
+
+
     @EventListener
-    public void handleDisconnect(
+    public void onDisconnected(
             SessionDisconnectEvent event
     ){
+
+
+
+        System.out.println(
+                "========== WS SESSION DISCONNECT =========="
+        );
+
+
 
 
 
@@ -124,14 +164,46 @@ public class WebSocketEventListener {
 
 
 
+
+        System.out.println(
+                "PRINCIPAL DISCONNECT : "
+                +
+                principal
+        );
+
+
+
+
+
+
+
         if(principal != null){
 
 
 
+            String email =
+
+                    principal.getName();
+
+
+
+
+
+
+            System.out.println(
+                    "USER OFFLINE : "
+                    +
+                    email
+            );
+
+
+
+
+
+
+
             presenceService.offline(
-
-                    principal.getName()
-
+                    email
             );
 
 

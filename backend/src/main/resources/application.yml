@@ -5,6 +5,7 @@ spring:
     username: postgres
     password: postgres
 
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -16,15 +17,33 @@ spring:
         format_sql: true
 
 
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+
+
 server:
+
   port: 8081
+
+  tomcat:
+    max-swallow-size: 50MB
+
 
 
 jwt:
+
   secret: 1234567890123456789012345678901234567890123456789012345678901234
+
   expiration: 86400000
 
 
+
 app:
+
   upload:
+
     dir: uploads

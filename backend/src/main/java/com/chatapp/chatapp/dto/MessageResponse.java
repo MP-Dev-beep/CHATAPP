@@ -8,9 +8,6 @@ import java.time.LocalDateTime;
 
 
 
-
-
-
 @Getter
 @Setter
 public class MessageResponse {
@@ -20,7 +17,6 @@ public class MessageResponse {
     private Long id;
 
 
-
     private String content;
 
 
@@ -28,9 +24,7 @@ public class MessageResponse {
     private Long conversationId;
 
 
-
     private Long senderId;
-
 
 
     private String senderFirstname;
@@ -42,29 +36,42 @@ public class MessageResponse {
 
 
     /*
-     *
-     * ✓✓ gris
-     *
-     */
-    private boolean delivered;
+    FICHIER
+    */
+
+    private String fileName;
+
+
+    private String fileType;
+
+
+    private String fileUrl;
+
 
 
 
 
     /*
-     *
-     * ✓✓ bleu
-     *
-     */
-    private boolean read;
+    ✓✓ gris
+    */
 
+    private boolean delivered;
 
 
     private LocalDateTime deliveredAt;
 
+
+
+
+
+    /*
+    ✓✓ bleu
+    */
+
+    private boolean read;
+
+
     private LocalDateTime readAt;
-
-
 
 
 

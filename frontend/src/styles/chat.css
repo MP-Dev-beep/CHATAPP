@@ -812,3 +812,62 @@ body {
     font-size:40px;
 
 }
+
+
+/* ======================================
+   IMAGE MESSAGE CHAT
+====================================== */
+
+.message-image {
+
+    width: 250px;
+
+    height: 250px;
+
+    object-fit: cover;
+
+    border-radius: 12px;
+
+    margin-top: 8px;
+
+    display: block;
+
+    max-width: 100%;
+
+}
+
+
+
+/* ======================================
+   IMAGE GRANDE SUR MOBILE
+====================================== */
+
+@media screen and (max-width:600px){
+
+    .message-image{
+
+        width: 180px;
+
+        height: 180px;
+
+    }
+
+}
+
+
+
+/* ======================================
+   VIDEO MESSAGE
+====================================== */
+
+.message-video{
+
+    width: 300px;
+
+    max-width:100%;
+
+    border-radius:12px;
+
+    margin-top:8px;
+
+}

@@ -5,8 +5,10 @@ import com.chatapp.chatapp.service.JwtService;
 
 import lombok.RequiredArgsConstructor;
 
+
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 
@@ -34,25 +36,22 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
+
     @Override
     public Message<?> preSend(
-
             Message<?> message,
-
             MessageChannel channel
-
     ){
+
 
 
         StompHeaderAccessor accessor =
 
                 MessageHeaderAccessor.getAccessor(
-
                         message,
-
                         StompHeaderAccessor.class
-
                 );
+
 
 
 
@@ -68,15 +67,20 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
+        /*
+        ===================================
+        AUTHENTIFICATION UNIQUEMENT CONNECT
+        ===================================
+        */
+
+
         if(StompCommand.CONNECT.equals(
-
                 accessor.getCommand()
-
         )){
 
 
 
-            String header =
+            String authorization =
 
                     accessor.getFirstNativeHeader(
                             "Authorization"
@@ -92,7 +96,9 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
             System.out.println(
-                    "HEADER : " + header
+                    "TOKEN : "
+                    +
+                    authorization
             );
 
 
@@ -100,15 +106,23 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
+            if(authorization != null &&
 
-            if(header != null && header.startsWith("Bearer ")){
+                    authorization.startsWith("Bearer ")
 
-                try{
+            ){
+
+
+
+                try {
+
 
 
                     String token =
 
-                            header.substring(7);
+                            authorization.substring(7);
+
+
 
 
 
@@ -124,7 +138,9 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
-                    UsernamePasswordAuthenticationToken auth =
+
+                    UsernamePasswordAuthenticationToken authentication =
+
 
                             new UsernamePasswordAuthenticationToken(
 
@@ -140,44 +156,102 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 
 
-                    accessor.setUser(auth);
+
+
+                    accessor.setUser(
+                            authentication
+                    );
+
+
+
 
 
 
 
                     System.out.println(
-                            "WS USER AUTH : "
-                            + email
+                            "WS AUTH OK : "
+                            +
+                            email
                     );
 
 
 
+
+
                 }
+
                 catch(Exception e){
 
 
+
                     System.out.println(
-                            "JWT WS ERROR : "
-                            + e.getMessage()
+                            "ERREUR JWT WS : "
+                            +
+                            e.getMessage()
                     );
 
 
                 }
 
 
+
             }
-            else{
+
+            else {
+
 
 
                 System.out.println(
-                        "TOKEN WS ABSENT"
+                        "AUCUN TOKEN WS"
                 );
 
 
             }
 
 
+
         }
+
+
+
+
+
+
+
+        /*
+        ===================================
+        VERIFICATION PRINCIPAL FINAL
+        ===================================
+        */
+
+
+        if(accessor.getUser() != null){
+
+
+
+            System.out.println(
+
+                    "PRINCIPAL FINAL : "
+
+                    +
+
+                    accessor.getUser().getName()
+
+            );
+
+
+        }
+
+        else{
+
+
+            System.out.println(
+                    "PRINCIPAL FINAL NULL"
+            );
+
+
+        }
+
 
 
 

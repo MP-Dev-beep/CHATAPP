@@ -33,18 +33,24 @@ public class MessageService {
 
     private final MessageRepository messageRepository;
 
+
     private final UserRepository userRepository;
 
+
     private final ConversationService conversationService;
+
+
+    private final PresenceService presenceService;
+
 
 
 
 
 
     /*
-    ==========================================
+    ==================================================
         ENVOYER MESSAGE
-    ==========================================
+    ==================================================
     */
 
 
@@ -68,6 +74,8 @@ public class MessageService {
 
 
 
+
+
         Conversation conversation =
 
                 conversationService.getConversationForUser(
@@ -82,25 +90,125 @@ public class MessageService {
 
 
 
+
+
+
+        User receiver =
+
+
+                conversation.getUser1()
+                        .getEmail()
+                        .equals(email)
+
+                ?
+
+                conversation.getUser2()
+
+                :
+
+                conversation.getUser1();
+
+
+
+
+
+
+
+
+
         Message message = Message.builder()
+
 
                 .content(
                         request.getContent()
                 )
 
+
+                /*
+                ==========================
+                FICHIER
+                ==========================
+                */
+
+
+                .fileName(
+                        request.getFileName()
+                )
+
+
+                .fileType(
+                        request.getFileType()
+                )
+
+
+                .fileUrl(
+                        request.getFileUrl()
+                )
+
+
+
                 .sender(sender)
 
+
+
                 .conversation(conversation)
+
+
 
                 .sentAt(
                         LocalDateTime.now()
                 )
 
+
+
                 .delivered(false)
+
+
 
                 .read(false)
 
+
+
                 .build();
+
+
+
+
+
+
+
+
+
+        /*
+        ==========================================
+        DESTINATAIRE ONLINE
+        MESSAGE LIVRE AUTOMATIQUEMENT
+        ✓✓ GRIS
+        ==========================================
+        */
+
+
+        if(
+                presenceService.isOnline(
+                        receiver.getEmail()
+                )
+        ){
+
+
+            message.setDelivered(true);
+
+
+            message.setDeliveredAt(
+
+                    LocalDateTime.now()
+
+            );
+
+
+        }
+
+
+
 
 
 
@@ -112,7 +220,12 @@ public class MessageService {
 
 
 
+
+
+
+
         return convert(saved);
+
 
 
     }
@@ -123,10 +236,15 @@ public class MessageService {
 
 
 
+
+
+
+
+
     /*
-    ==========================================
-        HISTORIQUE MESSAGES
-    ==========================================
+    ==================================================
+        HISTORIQUE
+    ==================================================
     */
 
 
@@ -150,17 +268,24 @@ public class MessageService {
 
 
 
+
         return messageRepository
 
                 .findByConversationIdOrderBySentAtAsc(
+
                         conversationId
+
                 )
+
 
                 .stream()
 
+
                 .map(this::convert)
 
+
                 .toList();
+
 
 
     }
@@ -173,10 +298,13 @@ public class MessageService {
 
 
 
+
+
+
     /*
-    ==========================================
-        MARQUER TOUTE LA CONVERSATION LUE
-    ==========================================
+    ==================================================
+        MARQUER CONVERSATION LUE
+    ==================================================
     */
 
 
@@ -200,11 +328,16 @@ public class MessageService {
 
 
 
+
         List<Message> messages =
 
                 messageRepository.findByConversationId(
+
                         conversationId
+
                 );
+
+
 
 
 
@@ -213,14 +346,21 @@ public class MessageService {
 
 
 
-            if(!message.isRead()){
+            if(
+                    !message.getSender()
+                            .getEmail()
+                            .equals(email)
+            ){
 
 
 
                 message.setDelivered(true);
 
 
+
                 message.setRead(true);
+
+
 
 
 
@@ -229,10 +369,13 @@ public class MessageService {
 
 
                     message.setDeliveredAt(
+
                             LocalDateTime.now()
+
                     );
 
                 }
+
 
 
 
@@ -242,11 +385,12 @@ public class MessageService {
 
 
                     message.setReadAt(
+
                             LocalDateTime.now()
+
                     );
 
                 }
-
 
 
             }
@@ -254,6 +398,8 @@ public class MessageService {
 
 
         }
+
+
 
 
 
@@ -271,16 +417,19 @@ public class MessageService {
 
 
 
+
+
+
     /*
-    ==========================================
+    ==================================================
         MESSAGE LIVRE ✓✓ GRIS
-    ==========================================
+    ==================================================
     */
 
 
     public MessageResponse markAsDelivered(
 
-            Long id,
+            Long messageId,
 
             String email
 
@@ -290,13 +439,16 @@ public class MessageService {
 
         Message message =
 
-                messageRepository.findById(id)
+                messageRepository.findById(messageId)
 
                 .orElseThrow(() ->
+
                         new RuntimeException(
                                 "Message introuvable"
                         )
+
                 );
+
 
 
 
@@ -314,21 +466,23 @@ public class MessageService {
 
 
 
-        message.setDelivered(true);
+
+        if(!message.isDelivered()){
 
 
+            message.setDelivered(true);
 
-
-
-        if(message.getDeliveredAt()==null){
 
 
             message.setDeliveredAt(
+
                     LocalDateTime.now()
+
             );
 
 
         }
+
 
 
 
@@ -352,16 +506,19 @@ public class MessageService {
 
 
 
+
+
+
     /*
-    ==========================================
+    ==================================================
         MESSAGE LU ✓✓ BLEU
-    ==========================================
+    ==================================================
     */
 
 
     public MessageResponse markAsRead(
 
-            Long id,
+            Long messageId,
 
             String email
 
@@ -371,13 +528,16 @@ public class MessageService {
 
         Message message =
 
-                messageRepository.findById(id)
+                messageRepository.findById(messageId)
 
                 .orElseThrow(() ->
+
                         new RuntimeException(
                                 "Message introuvable"
                         )
+
                 );
+
 
 
 
@@ -396,7 +556,9 @@ public class MessageService {
 
 
 
+
         message.setDelivered(true);
+
 
         message.setRead(true);
 
@@ -409,7 +571,9 @@ public class MessageService {
 
 
             message.setDeliveredAt(
+
                     LocalDateTime.now()
+
             );
 
 
@@ -425,7 +589,9 @@ public class MessageService {
 
 
             message.setReadAt(
+
                     LocalDateTime.now()
+
             );
 
 
@@ -444,6 +610,7 @@ public class MessageService {
         );
 
 
+
     }
 
 
@@ -454,10 +621,148 @@ public class MessageService {
 
 
 
+
+
+
     /*
-    ==========================================
+    ==================================================
+        COMPTER NON LUS
+    ==================================================
+    */
+
+
+    public Long countUnreadMessages(
+
+            Long conversationId,
+
+            String email
+
+    ){
+
+
+
+        User user =
+
+                userRepository.findByEmail(email)
+
+                .orElseThrow(() ->
+
+                        new RuntimeException(
+                                "Utilisateur introuvable"
+                        )
+
+                );
+
+
+
+
+
+
+
+        conversationService.getConversationForUser(
+
+                conversationId,
+
+                email
+
+        );
+
+
+
+
+
+
+
+        return messageRepository.countUnreadMessages(
+
+                conversationId,
+
+                user.getId()
+
+        );
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+    ==================================================
+        NON LIVRES
+    ==================================================
+    */
+
+
+    public List<MessageResponse> getUndeliveredMessages(
+
+            Long conversationId,
+
+            String email
+
+    ){
+
+
+
+        conversationService.getConversationForUser(
+
+                conversationId,
+
+                email
+
+        );
+
+
+
+
+
+
+
+        return messageRepository
+
+                .findByConversationIdAndDeliveredFalse(
+
+                        conversationId
+
+                )
+
+
+                .stream()
+
+
+                .map(this::convert)
+
+
+                .toList();
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+    ==================================================
         ENTITY -> DTO
-    ==========================================
+    ==================================================
     */
 
 
@@ -477,15 +782,27 @@ public class MessageService {
 
 
 
+
+
         response.setId(
+
                 message.getId()
+
         );
+
+
+
 
 
 
         response.setContent(
+
                 message.getContent()
+
         );
+
+
+
 
 
 
@@ -497,11 +814,19 @@ public class MessageService {
 
 
 
+
+
+
+
         response.setSenderId(
 
                 message.getSender().getId()
 
         );
+
+
+
+
 
 
 
@@ -513,12 +838,58 @@ public class MessageService {
 
 
 
+
+
+
+
         response.setSentAt(
 
                 message.getSentAt()
 
         );
 
+
+
+
+
+
+
+        /*
+        FICHIER
+        */
+
+
+        response.setFileName(
+
+                message.getFileName()
+
+        );
+
+
+
+        response.setFileType(
+
+                message.getFileType()
+
+        );
+
+
+
+        response.setFileUrl(
+
+                message.getFileUrl()
+
+        );
+
+
+
+
+
+
+
+        /*
+        STATUT
+        */
 
 
         response.setDelivered(
@@ -529,17 +900,17 @@ public class MessageService {
 
 
 
-        response.setRead(
+        response.setDeliveredAt(
 
-                message.isRead()
+                message.getDeliveredAt()
 
         );
 
 
 
-        response.setDeliveredAt(
+        response.setRead(
 
-                message.getDeliveredAt()
+                message.isRead()
 
         );
 
@@ -554,11 +925,13 @@ public class MessageService {
 
 
 
+
+
         return response;
 
 
-    }
 
+    }
 
 
 

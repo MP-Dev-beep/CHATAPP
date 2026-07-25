@@ -14,6 +14,13 @@ import {
 } from "../services/websocket";
 
 
+import {
+    uploadFile
+} from "../services/api";
+
+
+
+
 
 
 
@@ -29,10 +36,17 @@ function MessageInput(){
 
 
 
+    const [
+        file,
+        setFile
+    ] = useState(null);
+
+
+
+
+
     const {
-
         conversationId
-
     } = useConversation();
 
 
@@ -69,14 +83,108 @@ function MessageInput(){
 
 
 
-    function handleSend(){
+
+    async function handleSend(){
+
+
+
+        if(!conversationId){
+
+            return;
+
+        }
+
+
+
+
+
+
+
+        let fileName=null;
+
+        let fileType=null;
+
+        let fileUrl=null;
+
+
+
+
+
+
+
+
+
+        /*
+        ===============================
+        UPLOAD AVANT ENVOI MESSAGE
+        ===============================
+        */
+
+
+        if(file){
+
+
+
+            try{
+
+
+                const uploaded = await uploadFile(
+                    file
+                );
+
+
+
+
+                fileName =
+                    uploaded.fileName;
+
+
+
+                fileType =
+                    uploaded.fileType;
+
+
+
+                fileUrl =
+                    uploaded.fileUrl;
+
+
+
+            }
+
+            catch(error){
+
+
+                console.error(
+                    "UPLOAD ERROR",
+                    error
+                );
+
+
+                return;
+
+
+            }
+
+
+        }
+
+
+
+
+
+
 
 
 
         if(
+
             !content.trim()
-            ||
-            !conversationId
+
+            &&
+
+            !fileUrl
+
         ){
 
             return;
@@ -87,13 +195,34 @@ function MessageInput(){
 
 
 
+
+
+
+
+        /*
+        ===============================
+        WEBSOCKET
+        ===============================
+        */
+
+
         sendMessage(
 
 
             conversationId,
 
 
-            content.trim()
+            content.trim(),
+
+
+            fileName,
+
+
+            fileType,
+
+
+            fileUrl
+
 
 
         );
@@ -102,7 +231,12 @@ function MessageInput(){
 
 
 
+
+
+
         setContent("");
+
+        setFile(null);
 
 
 
@@ -115,7 +249,11 @@ function MessageInput(){
 
 
 
-    return (
+
+
+
+
+    return(
 
 
         <div className="message-input">
@@ -126,6 +264,32 @@ function MessageInput(){
 
             <input
 
+
+                type="file"
+
+
+                onChange={
+
+                    e=>
+
+                    setFile(
+                        e.target.files[0]
+                    )
+
+                }
+
+
+            />
+
+
+
+
+
+
+
+
+
+            <input
 
 
                 value={content}
@@ -177,6 +341,8 @@ function MessageInput(){
 
 
 
+
+
             <button
 
                 onClick={handleSend}
@@ -185,8 +351,8 @@ function MessageInput(){
 
                 Envoyer
 
-            </button>
 
+            </button>
 
 
 

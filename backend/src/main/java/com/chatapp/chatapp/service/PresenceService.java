@@ -2,16 +2,18 @@ package com.chatapp.chatapp.service;
 
 
 import com.chatapp.chatapp.dto.UserStatusResponse;
+import com.chatapp.chatapp.entity.User;
 import com.chatapp.chatapp.repository.UserRepository;
 
+
 import lombok.RequiredArgsConstructor;
+
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 
 
 
@@ -30,55 +32,26 @@ public class PresenceService {
 
 
 
-    /*
-    =====================================
-    COMPTEUR DES CONNEXIONS WS
-    email -> nombre de sessions
-    =====================================
-    */
-
-    private final Map<String,Integer> onlineUsers =
-
-            new ConcurrentHashMap<>();
-
-
-
-
-
-
 
 
 
     /*
     =====================================
-    UTILISATEUR CONNECTE
+    USER ONLINE
     =====================================
     */
 
-    public void online(String email){
+
+    public void online(
+            String email
+    ){
 
 
 
-        int count =
-
-                onlineUsers.getOrDefault(
-                        email,
-                        0
-                );
-
-
-
-        count++;
-
-
-
-
-        onlineUsers.put(
-
-                email,
-
-                count
-
+        System.out.println(
+                "TRY ONLINE : "
+                +
+                email
         );
 
 
@@ -86,116 +59,179 @@ public class PresenceService {
 
 
 
+        Optional<User> optionalUser =
 
-        /*
-        Première connexion seulement
-        */
-
-        if(count == 1){
-
-
-
-            userRepository.findByEmail(email)
-
-                    .ifPresent(user->{
-
-
-
-                        user.setOnline(true);
-
-
-                        userRepository.save(user);
+                userRepository.findByEmail(
+                        email
+                );
 
 
 
 
 
 
-                        messagingTemplate.convertAndSend(
 
-                                "/topic/users-status",
+        if(optionalUser.isPresent()){
 
-                                new UserStatusResponse(
 
-                                        email,
 
-                                        true
-
-                                )
-
-                        );
+            User user = optionalUser.get();
 
 
 
 
 
-                        System.out.println(
-                                "ONLINE : "
-                                + email
-                        );
+            if(!user.isOnline()){
 
 
 
-                    });
+                user.setOnline(true);
+
+
+                userRepository.save(
+                        user
+                );
+
+
+            }
+
+
+
+
+
+
+
+            UserStatusResponse response =
+
+
+                    new UserStatusResponse(
+
+                            user.getEmail(),
+
+                            true
+
+                    );
+
+
+
+
+
+
+
+            messagingTemplate.convertAndSend(
+
+                    "/topic/users-status",
+
+                    response
+
+            );
+
+
+
+
+
+
+
+
+            System.out.println(
+                    "ONLINE BROADCAST : "
+                    +
+                    email
+            );
+
+
 
 
 
         }
 
+        else{
+
+
+            System.out.println(
+                    "USER INTROUVABLE : "
+                    +
+                    email
+            );
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+    =====================================
+    USER OFFLINE
+    =====================================
+    */
+
+
+    public void offline(
+            String email
+    ){
 
 
 
 
 
         System.out.println(
-
-                "SESSION WS "
-
-                + email
-
-                + " = "
-
-                + count
-
+                "TRY OFFLINE : "
+                +
+                email
         );
 
 
 
-    }
 
 
 
 
 
+        Optional<User> optionalUser =
 
-
-
-
-    /*
-    =====================================
-    UTILISATEUR DECONNECTE
-    =====================================
-    */
-
-    public void offline(String email){
-
-
-
-        int count =
-
-                onlineUsers.getOrDefault(
-
-                        email,
-
-                        0
-
+                userRepository.findByEmail(
+                        email
                 );
 
 
 
 
 
-        count--;
+
+
+        if(optionalUser.isPresent()){
+
+
+
+            User user = optionalUser.get();
+
+
+
+
+
+            user.setOnline(false);
+
+
+
+
+
+            userRepository.save(
+                    user
+            );
 
 
 
@@ -203,112 +239,86 @@ public class PresenceService {
 
 
 
-        /*
-        Il reste une connexion
-        */
-
-        if(count > 0){
 
 
+            UserStatusResponse response =
 
-            onlineUsers.put(
 
-                    email,
+                    new UserStatusResponse(
 
-                    count
+                            user.getEmail(),
+
+                            false
+
+                    );
+
+
+
+
+
+
+
+            messagingTemplate.convertAndSend(
+
+                    "/topic/users-status",
+
+                    response
 
             );
+
+
+
+
+
 
 
 
             System.out.println(
-
-                    "SESSION RESTANTE "
-
-                    + email
-
-                    + " = "
-
-                    + count
-
+                    "OFFLINE BROADCAST : "
+                    +
+                    email
             );
 
 
 
-            return;
+
+
+        }
+
+        else{
+
+
+            System.out.println(
+                    "USER INTROUVABLE : "
+                    +
+                    email
+            );
 
 
         }
 
 
 
-
-
-
+    }
 
 
         /*
-        Dernière connexion fermée
-        */
+    =====================================
+    VERIFIER SI USER EST ONLINE
+    =====================================
+    */
 
-        onlineUsers.remove(email);
+    public boolean isOnline(
+            String email
+    ){
 
+        return userRepository.findByEmail(email)
 
+                .map(User::isOnline)
 
-
-
-
-
-        userRepository.findByEmail(email)
-
-                .ifPresent(user->{
-
-
-
-                    user.setOnline(false);
-
-
-                    userRepository.save(user);
-
-
-
-
-
-
-                    messagingTemplate.convertAndSend(
-
-                            "/topic/users-status",
-
-                            new UserStatusResponse(
-
-                                    email,
-
-                                    false
-
-                            )
-
-                    );
-
-
-
-
-
-                    System.out.println(
-
-                            "OFFLINE : "
-
-                            + email
-
-                    );
-
-
-
-                });
-
-
+                .orElse(false);
 
     }
-
 
 
 

@@ -2,7 +2,8 @@ import {
     createContext,
     useContext,
     useState,
-    useEffect
+    useEffect,
+    useRef
 } from "react";
 
 
@@ -29,35 +30,18 @@ const UserContext = createContext();
 
 
 
-
 export function UserProvider({children}){
 
 
-    const [
-        users,
-        setUsers
-    ] = useState([]);
+    const [users,setUsers] = useState([]);
+
+    const [user,setUser] = useState(null);
+
+    const [onlineUsers,setOnlineUsers] = useState([]);
 
 
 
-
-
-    const [
-        user,
-        setUser
-    ] = useState(null);
-
-
-
-
-
-
-    const [
-        onlineUsers,
-        setOnlineUsers
-    ] = useState([]);
-
-
+    const presenceStarted = useRef(false);
 
 
 
@@ -76,45 +60,59 @@ export function UserProvider({children}){
 
 
 
-            setUsers(data || []);
-
-
-
-
-
-            const online =
-
-            (data || [])
-
-            .filter(
-
-                u=>u.online
-
-            )
-
-            .map(
-
-                u=>u.email
-
+            console.log(
+                "USERS RECUS",
+                data
             );
+
+
+
+            setUsers(
+                data || []
+            );
+
 
 
 
 
             setOnlineUsers(
-                online
+
+
+                (data || [])
+
+
+                .filter(
+
+                    user=>
+
+                    user.online
+
+                )
+
+
+                .map(
+
+                    user=>
+
+                    user.email
+
+                )
+
+
             );
 
 
 
         }
-
         catch(error){
 
 
             console.error(
-                "Erreur users",
+
+                "Erreur chargement users",
+
                 error
+
             );
 
 
@@ -131,20 +129,22 @@ export function UserProvider({children}){
 
 
 
-
-
     async function loadCurrentUser(){
-
 
 
         try{
 
 
-            const data = await getCurrentUser();
+            const data =
+
+                await getCurrentUser();
+
+
 
 
 
             setUser(data);
+
 
 
 
@@ -158,19 +158,21 @@ export function UserProvider({children}){
             );
 
 
-        }
 
+        }
         catch(error){
 
 
             console.error(
-                "Erreur user",
+
+                "Erreur utilisateur courant",
+
                 error
+
             );
 
 
         }
-
 
 
     }
@@ -186,27 +188,7 @@ export function UserProvider({children}){
     async function search(keyword){
 
 
-        try{
-
-
-            return await searchUsers(
-                keyword
-            );
-
-
-        }
-
-        catch(error){
-
-
-            console.error(
-                error
-            );
-
-
-            return [];
-
-        }
+        return await searchUsers(keyword);
 
 
     }
@@ -222,42 +204,26 @@ export function UserProvider({children}){
     async function editProfile(data){
 
 
-        try{
-
-
-            const updated =
+        const updated =
 
             await updateProfile(data);
 
 
 
-            setUser(updated);
+
+        setUser(updated);
 
 
 
-            await fetchUsers();
+        await fetchUsers();
 
 
 
-            return updated;
+        return updated;
 
-
-        }
-
-        catch(error){
-
-
-            console.error(
-                error
-            );
-
-
-        }
 
 
     }
-
-
 
 
 
@@ -270,43 +236,31 @@ export function UserProvider({children}){
     async function updateAvatar(file){
 
 
-
-        try{
-
-
-            const updated =
+        const updated =
 
             await uploadAvatar(file);
 
 
 
 
-            setUser(updated);
+        setUser(updated);
 
 
 
-            await fetchUsers();
+
+        await fetchUsers();
 
 
 
-            return updated;
 
+        return updated;
 
-        }
-
-        catch(error){
-
-
-            console.error(error);
-
-
-            throw error;
-
-
-        }
 
 
     }
+
+
+
 
 
 
@@ -323,9 +277,16 @@ export function UserProvider({children}){
 
 
 
-        if(
-            !localStorage.getItem("token")
-        ){
+        const token =
+
+            localStorage.getItem(
+                "token"
+            );
+
+
+
+
+        if(!token){
 
             return;
 
@@ -336,123 +297,218 @@ export function UserProvider({children}){
 
 
 
-        loadCurrentUser();
 
-        fetchUsers();
 
+        async function initialize(){
 
 
 
+            await loadCurrentUser();
 
 
+            await fetchUsers();
 
 
-        /*
-        ===============================
-        CONNEXION PRESENCE WEBSOCKET
-        ===============================
-        */
 
 
 
-        connectPresence(
 
-            (status)=>{
 
 
 
-                console.log(
-                    "PRESENCE EVENT",
-                    status
-                );
+            if(!presenceStarted.current){
 
 
 
+                presenceStarted.current = true;
 
 
-                setUsers(prev=>
 
 
-                    prev.map(u=>
 
 
-                        u.email === status.email
+                connectPresence(
 
-                        ?
 
-                        {
 
-                            ...u,
+                    (status)=>{
 
-                            online:status.online
 
-                        }
 
 
-                        :
 
-                        u
+                        console.log(
 
+                            "PRESENCE EVENT",
 
-                    )
-
-
-                );
-
-
-
-
-
-
-
-                setOnlineUsers(prev=>{
-
-
-
-                    if(status.online){
-
-
-
-                        if(
-                            !prev.includes(
-                                status.email
-                            )
-                        ){
-
-                            return [
-
-                                ...prev,
-
-                                status.email
-
-                            ];
-
-                        }
-
-
-                        return prev;
-
-
-
-                    }
-
-                    else{
-
-
-                        return prev.filter(
-
-                            email =>
-
-                            email !== status.email
+                            status
 
                         );
 
 
+
+
+
+
+
+
+                        /*
+                        =========================
+                        UPDATE USERS ONLINE
+                        =========================
+                        */
+
+
+
+                        setUsers(prev=>
+
+
+
+                            prev.map(user=>
+
+
+
+
+                                user.email === status.email
+
+
+                                ?
+
+
+                                {
+
+
+                                    ...user,
+
+
+                                    online:
+                                    status.online
+
+
+
+                                }
+
+
+
+                                :
+
+
+
+                                user
+
+
+
+
+                            )
+
+
+
+                        );
+
+
+
+
+
+
+
+
+
+
+
+
+                        /*
+                        =========================
+                        LISTE USERS ONLINE
+                        =========================
+                        */
+
+
+
+                        setOnlineUsers(prev=>{
+
+
+
+
+
+                            if(status.online){
+
+
+
+
+
+                                if(
+
+                                    prev.includes(
+
+                                        status.email
+
+                                    )
+
+                                ){
+
+
+                                    return prev;
+
+
+                                }
+
+
+
+
+
+                                return [
+
+
+                                    ...prev,
+
+
+                                    status.email
+
+
+
+                                ];
+
+
+
+                            }
+
+
+
+
+
+
+
+                            return prev.filter(
+
+
+
+                                email=>
+
+                                email !== status.email
+
+
+
+                            );
+
+
+
+
+
+                        });
+
+
+
+
+
+
+
                     }
 
 
 
-                });
+                );
+
+
 
 
 
@@ -460,10 +516,16 @@ export function UserProvider({children}){
 
 
 
-        );
+
+
+        }
 
 
 
+
+
+
+        initialize();
 
 
 
@@ -476,10 +538,17 @@ export function UserProvider({children}){
         return ()=>{
 
 
+
             disconnectPresence();
 
 
+
+            presenceStarted.current=false;
+
+
+
         };
+
 
 
 
@@ -497,11 +566,14 @@ export function UserProvider({children}){
 
 
 
-    return (
+
+
+    return(
 
 
 
         <UserContext.Provider
+
 
 
             value={{
@@ -514,6 +586,7 @@ export function UserProvider({children}){
 
 
                 onlineUsers,
+
 
 
                 fetchUsers,
@@ -533,6 +606,7 @@ export function UserProvider({children}){
 
 
             }}
+
 
 
         >
@@ -561,15 +635,18 @@ export function UserProvider({children}){
 
 
 
+
+
+
 export function useUsers(){
 
 
 
     const context =
 
-    useContext(
-        UserContext
-    );
+        useContext(
+            UserContext
+        );
 
 
 
@@ -578,12 +655,17 @@ export function useUsers(){
     if(!context){
 
 
+
         throw new Error(
+
             "useUsers doit être utilisé dans UserProvider"
+
         );
 
 
     }
+
+
 
 
 

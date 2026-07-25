@@ -10,24 +10,15 @@ import {
 
 let stompClient = null;
 
-
 let presenceClient = null;
-
 
 let presenceSubscription = null;
 
-
-
 let subscriptions = [];
-
-
 
 let connected = false;
 
-
-
 let pendingDelivered = [];
-
 
 let pendingRead = [];
 
@@ -37,11 +28,9 @@ let pendingRead = [];
 
 
 
-
-
 /*
 ================================================
-CONNEXION CHAT WEBSOCKET
+CHAT WEBSOCKET
 ================================================
 */
 
@@ -61,21 +50,19 @@ export function connectWebSocket(
 ){
 
 
-
     const token =
-
         localStorage.getItem("token");
 
 
 
 
+    if(!token){
 
+        console.log(
+            "PAS TOKEN CHAT"
+        );
 
-    if(stompClient){
-
-
-        disconnectWebSocket();
-
+        return;
 
     }
 
@@ -86,8 +73,21 @@ export function connectWebSocket(
 
 
 
-    stompClient = new Client({
+    if(stompClient){
 
+        disconnectWebSocket();
+
+    }
+
+
+
+
+
+
+
+
+
+    stompClient = new Client({
 
 
 
@@ -108,6 +108,7 @@ export function connectWebSocket(
 
 
 
+
         connectHeaders:{
 
 
@@ -122,7 +123,9 @@ export function connectWebSocket(
 
 
 
+
         reconnectDelay:5000,
+
 
 
 
@@ -133,8 +136,11 @@ export function connectWebSocket(
 
 
             console.log(
-                "STOMP",
+
+                "CHAT",
+
                 msg
+
             );
 
 
@@ -153,9 +159,7 @@ export function connectWebSocket(
 
 
             console.log(
-
                 "CHAT WEBSOCKET CONNECTE"
-
             );
 
 
@@ -169,14 +173,9 @@ export function connectWebSocket(
 
 
 
-            /*
-            =================================
-            MESSAGES
-            =================================
-            */
 
 
-            const messageSub =
+            const messageSubscription =
 
 
             stompClient.subscribe(
@@ -190,11 +189,14 @@ export function connectWebSocket(
                 frame=>{
 
 
+
                     const data = JSON.parse(
 
                         frame.body
 
                     );
+
+
 
 
 
@@ -208,14 +210,15 @@ export function connectWebSocket(
 
 
 
-                    onMessageReceived(
 
-                        data
 
-                    );
+
+                    onMessageReceived(data);
+
 
 
                 }
+
 
 
             );
@@ -228,14 +231,7 @@ export function connectWebSocket(
 
 
 
-            /*
-            =================================
-            STATUS MESSAGE ✓✓
-            =================================
-            */
-
-
-            const statusSub =
+            const statusSubscription =
 
 
             stompClient.subscribe(
@@ -249,6 +245,7 @@ export function connectWebSocket(
                 frame=>{
 
 
+
                     const data = JSON.parse(
 
                         frame.body
@@ -257,25 +254,14 @@ export function connectWebSocket(
 
 
 
-                    console.log(
-
-                        "MESSAGE STATUS",
-
-                        data
-
-                    );
 
 
-
-                    onStatusReceived(
-
-                        data
-
-                    );
+                    onStatusReceived(data);
 
 
 
                 }
+
 
 
             );
@@ -288,14 +274,7 @@ export function connectWebSocket(
 
 
 
-            /*
-            =================================
-            TYPING
-            =================================
-            */
-
-
-            const typingSub =
+            const typingSubscription =
 
 
             stompClient.subscribe(
@@ -309,6 +288,7 @@ export function connectWebSocket(
                 frame=>{
 
 
+
                     onTypingReceived(
 
                         frame.body
@@ -317,6 +297,7 @@ export function connectWebSocket(
 
 
                 }
+
 
 
             );
@@ -331,11 +312,11 @@ export function connectWebSocket(
 
             subscriptions.push(
 
-                messageSub,
+                messageSubscription,
 
-                statusSub,
+                statusSubscription,
 
-                typingSub
+                typingSubscription
 
             );
 
@@ -345,13 +326,6 @@ export function connectWebSocket(
 
 
 
-
-
-            /*
-            =================================
-            ENVOIS EN ATTENTE
-            =================================
-            */
 
 
             pendingDelivered.forEach(id=>{
@@ -365,6 +339,7 @@ export function connectWebSocket(
 
 
             pendingDelivered=[];
+
 
 
 
@@ -403,24 +378,9 @@ export function connectWebSocket(
             connected=false;
 
 
-        },
+            console.log(
 
-
-
-
-
-
-
-
-
-        onStompError:(error)=>{
-
-
-            console.error(
-
-                "STOMP ERROR",
-
-                error
+                "CHAT DECONNECTE"
 
             );
 
@@ -429,7 +389,13 @@ export function connectWebSocket(
 
 
 
+
+
+
+
     });
+
+
 
 
 
@@ -450,14 +416,9 @@ export function connectWebSocket(
 
 
 
-
-
-
-
-
 /*
 ================================================
-PRESENCE ONLINE / OFFLINE
+PRESENCE WEBSOCKET
 ================================================
 */
 
@@ -476,10 +437,37 @@ export function connectPresence(onStatus){
 
 
 
+    if(!token){
+
+
+        console.log(
+            "PAS TOKEN PRESENCE"
+        );
+
+
+        return;
+
+
+    }
+
+
+
+
+
+
+
+
     if(presenceClient){
 
 
-        disconnectPresence();
+        console.log(
+
+            "PRESENCE DEJA CONNECTEE"
+
+        );
+
+
+        return;
 
 
     }
@@ -493,6 +481,7 @@ export function connectPresence(onStatus){
 
 
     presenceClient = new Client({
+
 
 
 
@@ -517,7 +506,9 @@ export function connectPresence(onStatus){
 
 
 
+
         connectHeaders:{
+
 
 
             Authorization:
@@ -535,7 +526,6 @@ export function connectPresence(onStatus){
 
 
         reconnectDelay:5000,
-
 
 
 
@@ -581,6 +571,19 @@ export function connectPresence(onStatus){
 
 
 
+            if(presenceSubscription){
+
+
+                presenceSubscription.unsubscribe();
+
+
+            }
+
+
+
+
+
+
 
             presenceSubscription =
 
@@ -593,37 +596,57 @@ export function connectPresence(onStatus){
 
 
 
+
                 frame=>{
 
 
 
-                    const data = JSON.parse(
-
-                        frame.body
-
-                    );
+                    try{
 
 
 
+                        const data = JSON.parse(
 
+                            frame.body
 
-
-
-                    console.log(
-
-                        "STATUS USER",
-
-                        data
-
-                    );
+                        );
 
 
 
 
 
+                        console.log(
+
+                            "PRESENCE RECUE",
+
+                            data
+
+                        );
 
 
-                    onStatus(data);
+
+
+
+
+                        onStatus(data);
+
+
+
+                    }
+
+                    catch(error){
+
+
+                        console.error(
+
+                            "ERREUR PRESENCE",
+
+                            error
+
+                        );
+
+
+                    }
 
 
 
@@ -636,6 +659,22 @@ export function connectPresence(onStatus){
 
 
 
+
+        },
+
+
+
+
+
+
+        onDisconnect:()=>{
+
+
+            console.log(
+
+                "PRESENCE DECONNECTEE"
+
+            );
 
 
         }
@@ -671,6 +710,7 @@ export function connectPresence(onStatus){
 
 
 
+
 export function disconnectPresence(){
 
 
@@ -692,14 +732,16 @@ export function disconnectPresence(){
 
 
 
-
     if(presenceClient){
+
 
 
         presenceClient.deactivate();
 
 
+
         presenceClient=null;
+
 
 
     }
@@ -716,6 +758,25 @@ export function disconnectPresence(){
 
 
 
+export function isPresenceConnected(){
+
+
+
+    return (
+
+        presenceClient !== null
+
+        &&
+
+        presenceClient.connected
+
+    );
+
+
+}
+
+
+
 
 
 
@@ -725,6 +786,7 @@ export function disconnectPresence(){
 /*
 ================================================
 ENVOYER MESSAGE
+TEXTE + FICHIER
 ================================================
 */
 
@@ -733,7 +795,13 @@ export function sendMessage(
 
     conversationId,
 
-    content
+    content,
+
+    fileName=null,
+
+    fileType=null,
+
+    fileUrl=null
 
 ){
 
@@ -745,15 +813,20 @@ export function sendMessage(
 
         console.log(
 
-            "WEBSOCKET NON CONNECTE"
+            "CHAT WS NON CONNECTE"
 
         );
+
 
 
         return;
 
 
+
     }
+
+
+
 
 
 
@@ -765,9 +838,11 @@ export function sendMessage(
 
 
 
+
         destination:
 
         "/app/chat.send",
+
 
 
 
@@ -781,11 +856,23 @@ export function sendMessage(
             conversationId,
 
 
-            content
+            content,
+
+
+
+            fileName,
+
+
+            fileType,
+
+
+            fileUrl
 
 
 
         })
+
+
 
 
 
@@ -794,10 +881,6 @@ export function sendMessage(
 
 
 }
-
-
-
-
 
 
 
@@ -840,11 +923,7 @@ export function sendDelivered(messageId){
 
 
 
-    sendDeliveredNow(
-
-        messageId
-
-    );
+    sendDeliveredNow(messageId);
 
 
 
@@ -877,9 +956,7 @@ function sendDeliveredNow(messageId){
         body:JSON.stringify({
 
 
-
             messageId
-
 
 
         })
@@ -891,10 +968,6 @@ function sendDeliveredNow(messageId){
 
 
 }
-
-
-
-
 
 
 
@@ -937,11 +1010,7 @@ export function sendRead(messageId){
 
 
 
-    sendReadNow(
-
-        messageId
-
-    );
+    sendReadNow(messageId);
 
 
 
@@ -974,9 +1043,7 @@ function sendReadNow(messageId){
         body:JSON.stringify({
 
 
-
             messageId
-
 
 
         })
@@ -988,9 +1055,6 @@ function sendReadNow(messageId){
 
 
 }
-
-
-
 
 
 
@@ -1064,12 +1128,9 @@ export function sendTyping(conversationId){
 
 
 
-
-
-
 /*
 ================================================
-DECONNEXION CHAT
+DECONNECT CHAT
 ================================================
 */
 
@@ -1089,10 +1150,8 @@ export function disconnectWebSocket(){
 
 
 
+
     subscriptions=[];
-
-
-
 
 
 
@@ -1105,8 +1164,9 @@ export function disconnectWebSocket(){
 
 
 
-
     connected=false;
+
+
 
 
 

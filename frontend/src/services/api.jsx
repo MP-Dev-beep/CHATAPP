@@ -1,27 +1,36 @@
 import axios from "axios";
 
 
+
 const api = axios.create({
 
-    baseURL: "http://localhost:8081/api",
+    baseURL:"http://localhost:8081/api",
 
-    headers: {
-        "Content-Type": "application/json"
-    },
-
-    withCredentials: true
+    withCredentials:true
 
 });
 
 
 
-// Ajouter automatiquement le JWT
+
+
+
+
+/*
+========================================
+JWT AUTOMATIQUE
+========================================
+*/
+
+
 api.interceptors.request.use(
 
-    (config) => {
+    (config)=>{
 
 
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem(
+            "token"
+        );
 
 
         console.log(
@@ -30,62 +39,165 @@ api.interceptors.request.use(
         );
 
 
+
         if(token){
+
 
             config.headers.Authorization =
                 `Bearer ${token}`;
 
+
         }
+
 
 
         return config;
 
+
     },
 
-    (error) => {
+
+    (error)=>{
+
 
         return Promise.reject(error);
 
+
     }
+
 
 );
 
 
 
-// Gestion expiration token
+
+
+
+
+
+
+/*
+========================================
+ERREURS AUTH
+========================================
+*/
+
+
 api.interceptors.response.use(
 
-    (response) => {
 
-        return response;
-
-    },
+    response=>response,
 
 
-    (error) => {
+    error=>{
 
 
-        if(error.response?.status === 401 ||
-           error.response?.status === 403){
+        if(
+            error.response?.status===401
+            ||
+            error.response?.status===403
+        ){
 
 
             console.log(
-                "Session expirée"
+                "SESSION EXPIREE"
             );
-
-
-            // optionnel
-            // localStorage.removeItem("token");
 
 
         }
 
 
+
         return Promise.reject(error);
+
 
     }
 
+
+
 );
+
+
+
+
+
+
+
+
+
+/*
+========================================
+UPLOAD FICHIER
+IMAGE VIDEO AUDIO DOCUMENT
+========================================
+*/
+
+
+export async function uploadFile(file){
+
+
+
+    const formData = new FormData();
+
+
+
+    formData.append(
+
+        "file",
+
+        file
+
+    );
+
+
+
+
+
+
+    const response = await api.post(
+
+
+
+        "/files/upload",
+
+
+
+        formData,
+
+
+
+        {
+
+            headers:{
+
+                "Content-Type":
+                "multipart/form-data"
+
+            }
+
+
+        }
+
+
+
+    );
+
+
+
+
+
+
+
+    return response.data;
+
+
+}
+
+
+
+
+
+
 
 
 

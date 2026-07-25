@@ -1,6 +1,9 @@
 import {
+
     useUsers
+
 } from "../context/UserContext";
+
 
 
 
@@ -19,7 +22,6 @@ function MessageBubble({
         user
 
     } = useUsers();
-
 
 
 
@@ -46,12 +48,9 @@ function MessageBubble({
     function formatTime(date){
 
 
-        if(!date){
+        if(!date)
 
             return "";
-
-        }
-
 
 
 
@@ -86,136 +85,55 @@ function MessageBubble({
 
 
 
-        if(!isMine){
-
+        if(!isMine)
 
             return null;
 
 
-        }
 
-
-
-
-
-
-
-
-        /*
-        ==================================
-            MESSAGE ENVOYE
-            ✓
-        ==================================
-        */
 
 
 
         if(!message.delivered){
 
 
-
-            return (
-
-
-                <span className="status sent">
-
-
-                    ✓
-
-
-                </span>
-
-
-            );
-
+            return <span className="status sent">
+                ✓
+            </span>;
 
         }
 
 
-
-
-
-
-
-
-
-        /*
-        ==================================
-            MESSAGE LIVRE
-            ✓✓ GRIS
-        ==================================
-        */
 
 
 
         if(
-
             message.delivered
-
             &&
-
             !message.read
-
         ){
 
 
-
-            return (
-
-
-                <span className="status delivered">
-
-
-                    ✓✓
-
-
-                </span>
-
-
-            );
-
+            return <span className="status delivered">
+                ✓✓
+            </span>;
 
         }
 
 
 
 
-
-
-
-
-
-        /*
-        ==================================
-            MESSAGE LU
-            ✓✓ BLEU
-        ==================================
-        */
 
 
 
         if(message.read){
 
 
-
-            return (
-
-
-                <span className="status read">
-
-
-                    ✓✓
-
-
-                </span>
-
-
-            );
-
+            return <span className="status read">
+                ✓✓
+            </span>;
 
         }
-
-
 
 
 
@@ -232,7 +150,7 @@ function MessageBubble({
 
 
 
-    return (
+    return(
 
 
 
@@ -252,7 +170,6 @@ function MessageBubble({
 
                 "message other-message"
 
-
             }
 
 
@@ -264,17 +181,133 @@ function MessageBubble({
 
 
 
+
             <div className="bubble">
 
 
 
-                <p>
 
+
+
+
+                {
+                message.content &&
+
+
+                <p>
 
                     {message.content}
 
 
                 </p>
+
+                }
+
+
+
+
+
+
+
+
+                {
+                message.fileType==="IMAGE" &&
+
+
+                <img
+
+
+                    src={
+
+                        "http://localhost:8081"
+
+                        +
+
+                        message.fileUrl
+
+                    }
+
+
+                    className="message-image"
+
+
+                    alt={message.fileName}
+
+
+                />
+
+                }
+
+
+
+
+
+
+
+
+
+                {
+                message.fileType==="VIDEO" &&
+
+
+                <video
+
+                    controls
+
+                    className="message-video"
+
+
+                >
+
+                    <source
+
+                        src={
+                            "http://localhost:8081"
+                            +
+                            message.fileUrl
+                        }
+
+                    />
+
+
+                </video>
+
+
+                }
+
+
+
+
+
+
+
+
+                {
+                message.fileType==="DOCUMENT" &&
+
+
+                <a
+
+                    href={
+                        "http://localhost:8081"
+                        +
+                        message.fileUrl
+                    }
+
+
+                    target="_blank"
+
+                >
+
+                    📄 {message.fileName}
+
+
+                </a>
+
+
+                }
+
+
 
 
 
@@ -285,19 +318,13 @@ function MessageBubble({
 
 
 
-
-
                     <span>
 
 
                         {
-
                         formatTime(
-
                             message.sentAt
-
                         )
-
                         }
 
 
@@ -307,20 +334,14 @@ function MessageBubble({
 
 
 
-
-
                     {
-
-
                     renderStatus()
-
-
                     }
 
 
 
-
                 </div>
+
 
 
 
@@ -332,13 +353,10 @@ function MessageBubble({
 
 
 
-
         </div>
 
 
-
     );
-
 
 
 }
