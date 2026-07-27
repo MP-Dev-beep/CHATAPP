@@ -42,5 +42,7 @@ public class MessageRequest {
     private String fileUrl;
 
 
+    private Long replyToId;
+
 
 }

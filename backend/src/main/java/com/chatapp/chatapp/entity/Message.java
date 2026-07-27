@@ -140,7 +140,17 @@ public class Message {
 
 
 
+/*
+=================================
+MESSAGE REPONDU
+=================================
+*/
 
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(
+        name = "reply_message_id"
+)
+private Message replyMessage;
 
 
 

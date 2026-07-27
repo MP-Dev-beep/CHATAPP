@@ -47,6 +47,7 @@ public class MessageService {
 
 
 
+
     /*
     ==================================================
         ENVOYER MESSAGE
@@ -92,6 +93,41 @@ public class MessageService {
 
 
 
+        /*
+        ==========================================
+        MESSAGE AUQUEL ON REPOND
+        ==========================================
+        */
+
+
+        Message repliedMessage = null;
+
+
+        if(request.getReplyToId() != null){
+
+
+            repliedMessage = messageRepository.findById(
+
+                    request.getReplyToId()
+
+            )
+
+            .orElseThrow(() ->
+
+                    new RuntimeException(
+                            "Message de réponse introuvable"
+                    )
+
+            );
+
+
+        }
+
+
+
+
+
+
 
         User receiver =
 
@@ -124,6 +160,7 @@ public class MessageService {
                 )
 
 
+
                 /*
                 ==========================
                 FICHIER
@@ -147,11 +184,26 @@ public class MessageService {
 
 
 
+
                 .sender(sender)
 
 
 
                 .conversation(conversation)
+
+
+
+                /*
+                ==========================
+                REPONSE MESSAGE
+                ==========================
+                */
+
+
+                .replyMessage(
+                        repliedMessage
+                )
+
 
 
 
@@ -183,7 +235,6 @@ public class MessageService {
         ==========================================
         DESTINATAIRE ONLINE
         MESSAGE LIVRE AUTOMATIQUEMENT
-        ✓✓ GRIS
         ==========================================
         */
 
@@ -217,6 +268,7 @@ public class MessageService {
         Message saved =
 
                 messageRepository.save(message);
+
 
 
 
@@ -301,6 +353,7 @@ public class MessageService {
 
 
 
+
     /*
     ==================================================
         MARQUER CONVERSATION LUE
@@ -341,7 +394,6 @@ public class MessageService {
 
 
 
-
         for(Message message : messages){
 
 
@@ -355,7 +407,6 @@ public class MessageService {
 
 
                 message.setDelivered(true);
-
 
 
                 message.setRead(true);
@@ -422,7 +473,7 @@ public class MessageService {
 
     /*
     ==================================================
-        MESSAGE LIVRE ✓✓ GRIS
+        MESSAGE LIVRE
     ==================================================
     */
 
@@ -448,7 +499,6 @@ public class MessageService {
                         )
 
                 );
-
 
 
 
@@ -511,7 +561,7 @@ public class MessageService {
 
     /*
     ==================================================
-        MESSAGE LU ✓✓ BLEU
+        MESSAGE LU
     ==================================================
     */
 
@@ -561,6 +611,7 @@ public class MessageService {
 
 
         message.setRead(true);
+
 
 
 
@@ -759,6 +810,7 @@ public class MessageService {
 
 
 
+
     /*
     ==================================================
         ENTITY -> DTO
@@ -795,11 +847,13 @@ public class MessageService {
 
 
 
+
         response.setContent(
 
                 message.getContent()
 
         );
+
 
 
 
@@ -887,6 +941,44 @@ public class MessageService {
 
 
 
+
+
+        /*
+        =====================================
+        REPONSE MESSAGE
+        =====================================
+        */
+
+
+        if(message.getReplyMessage()!=null){
+
+
+
+            response.setReplyToId(
+
+                    message.getReplyMessage().getId()
+
+            );
+
+
+
+            response.setReplyContent(
+
+                    message.getReplyMessage().getContent()
+
+            );
+
+
+        }
+
+
+
+
+
+
+
+
+
         /*
         STATUT
         */
@@ -921,6 +1013,7 @@ public class MessageService {
                 message.getReadAt()
 
         );
+
 
 
 

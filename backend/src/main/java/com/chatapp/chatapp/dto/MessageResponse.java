@@ -75,4 +75,9 @@ public class MessageResponse {
 
 
 
+    private Long replyToId;
+
+
+    private String replyContent;
+
 }

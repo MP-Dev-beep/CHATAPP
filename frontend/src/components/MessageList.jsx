@@ -16,9 +16,7 @@ import {
 
 
 
-
 function MessageList(){
-
 
 
     const {
@@ -30,9 +28,7 @@ function MessageList(){
 
 
 
-
     const bottomRef = useRef();
-
 
 
 
@@ -54,9 +50,6 @@ function MessageList(){
 
 
 
-
-
-
     return (
 
 
@@ -64,83 +57,60 @@ function MessageList(){
 
 
 
-
-
-
             {
-
             messages.length === 0 ?
-
 
 
             (
 
                 <div className="empty-chat">
 
-
                     <div className="empty-icon">
-
                         💬
-
                     </div>
 
 
                     <h3>
-
                         Aucun message
-
                     </h3>
 
 
-
                     <p>
-
                         Envoyez votre premier message
-
                     </p>
-
 
 
                 </div>
 
-
             )
-
 
 
             :
 
 
-
             messages.map(message=>(
 
 
+                <div
+                    key={`${message.id}-${message.sentAt}`}
+                    id={`message-${message.id}`}
+                >
 
-                <MessageBubble
+                    <MessageBubble
+                        message={message}
+                    />
 
 
-                    key={message.id}
-
-
-                    message={message}
-
-
-                />
+                </div>
 
 
             ))
-
-
 
             }
 
 
 
-
-
-
             <div ref={bottomRef}/>
-
 
 
         </div>
@@ -148,9 +118,7 @@ function MessageList(){
 
     );
 
-
 }
-
 
 
 export default MessageList;

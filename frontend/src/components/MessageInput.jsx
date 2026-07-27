@@ -33,7 +33,12 @@ function MessageInput(){
 
     const {
 
-        conversationId
+        conversationId,
+
+        replyMessage,
+
+        setReplyMessage
+
 
     } = useConversation();
 
@@ -41,30 +46,92 @@ function MessageInput(){
 
 
 
+    const [
 
-    const [content,setContent] = useState("");
+        content,
 
-    const [file,setFile] = useState(null);
+        setContent
 
-    const [preview,setPreview] = useState(null);
-
-    const [showEmoji,setShowEmoji] = useState(false);
-
-    const [uploading,setUploading] = useState(false);
+    ] = useState("");
 
 
 
 
 
+    const [
+
+        file,
+
+        setFile
+
+    ] = useState(null);
 
 
-    const mediaRecorderRef = useRef(null);
-
-    const chunksRef = useRef([]);
-
-    const [recording,setRecording] = useState(false);
 
 
+
+    const [
+
+        preview,
+
+        setPreview
+
+    ] = useState(null);
+
+
+
+
+
+    const [
+
+        showEmoji,
+
+        setShowEmoji
+
+    ] = useState(false);
+
+
+
+
+
+    const [
+
+        uploading,
+
+        setUploading
+
+    ] = useState(false);
+
+
+
+
+
+    const [
+
+        recording,
+
+        setRecording
+
+    ] = useState(false);
+
+
+
+
+
+    const mediaRecorderRef =
+        useRef(null);
+
+
+
+    const chunksRef =
+        useRef([]);
+
+
+
+
+
+    const typingTimeout =
+        useRef(null);
 
 
 
@@ -76,15 +143,51 @@ function MessageInput(){
     function handleChange(value){
 
 
+
         setContent(value);
+
+
 
 
 
         if(conversationId){
 
-            sendTyping(conversationId);
+
+            sendTyping(
+                conversationId
+            );
+
+
 
         }
+
+
+
+
+
+        if(typingTimeout.current){
+
+
+            clearTimeout(
+                typingTimeout.current
+            );
+
+
+        }
+
+
+
+
+
+        typingTimeout.current =
+
+            setTimeout(()=>{
+
+
+                // arrêt côté client
+
+            },2000);
+
 
 
     }
@@ -100,7 +203,11 @@ function MessageInput(){
     function handleFileChange(e){
 
 
-        const selected = e.target.files[0];
+
+        const selected =
+            e.target.files?.[0];
+
+
 
 
 
@@ -112,7 +219,9 @@ function MessageInput(){
 
 
 
+
         setFile(selected);
+
 
 
 
@@ -120,17 +229,19 @@ function MessageInput(){
         if(selected.type.startsWith("image")){
 
 
-            const url =
 
-                URL.createObjectURL(selected);
+            const url =
+                URL.createObjectURL(
+                    selected
+                );
 
 
 
             setPreview(url);
 
 
-        }
 
+        }
         else{
 
 
@@ -138,6 +249,7 @@ function MessageInput(){
 
 
         }
+
 
 
     }
@@ -153,19 +265,24 @@ function MessageInput(){
     function removeFile(){
 
 
+
         if(preview){
 
 
-            URL.revokeObjectURL(preview);
+            URL.revokeObjectURL(
+                preview
+            );
 
 
         }
 
 
 
+
         setPreview(null);
 
         setFile(null);
+
 
 
     }
@@ -181,9 +298,7 @@ function MessageInput(){
     function addEmoji(emoji){
 
 
-        setContent(
-
-            prev =>
+        setContent(prev=>
 
             prev + emoji.emoji
 
@@ -207,14 +322,14 @@ function MessageInput(){
         try{
 
 
-
             const stream =
 
-            await navigator.mediaDevices.getUserMedia({
+                await navigator.mediaDevices.getUserMedia({
 
-                audio:true
+                    audio:true
 
-            });
+                });
+
 
 
 
@@ -222,12 +337,18 @@ function MessageInput(){
 
             const recorder =
 
-            new MediaRecorder(stream);
+                new MediaRecorder(
+                    stream
+                );
 
 
 
 
-            mediaRecorderRef.current = recorder;
+
+
+            mediaRecorderRef.current =
+                recorder;
+
 
 
             chunksRef.current=[];
@@ -236,10 +357,20 @@ function MessageInput(){
 
 
 
+
+
             recorder.ondataavailable = e=>{
 
 
-                chunksRef.current.push(e.data);
+                if(e.data.size > 0){
+
+
+                    chunksRef.current.push(
+                        e.data
+                    );
+
+
+                }
 
 
             };
@@ -250,23 +381,24 @@ function MessageInput(){
 
 
 
-
             recorder.onstop = ()=>{
+
 
 
                 const blob =
 
-                new Blob(
+                    new Blob(
 
-                    chunksRef.current,
+                        chunksRef.current,
 
-                    {
+                        {
 
-                        type:"audio/webm"
+                            type:"audio/webm"
 
-                    }
+                        }
 
-                );
+                    );
+
 
 
 
@@ -274,19 +406,21 @@ function MessageInput(){
 
                 const audioFile =
 
-                new File(
+                    new File(
 
-                    [blob],
+                        [blob],
 
-                    "audio.webm",
+                        "audio.webm",
 
-                    {
+                        {
 
-                        type:"audio/webm"
+                            type:"audio/webm"
 
-                    }
+                        }
 
-                );
+                    );
+
+
 
 
 
@@ -294,15 +428,17 @@ function MessageInput(){
                 setFile(audioFile);
 
 
+
+
+
                 stream
-
                 .getTracks()
+                .forEach(track=>
 
-                .forEach(
-
-                    track=>track.stop()
+                    track.stop()
 
                 );
+
 
 
             };
@@ -316,19 +452,26 @@ function MessageInput(){
             recorder.start();
 
 
+
             setRecording(true);
 
 
 
         }
-
         catch(error){
 
 
-            console.error(error);
+            console.error(
+
+                "Erreur microphone",
+
+                error
+
+            );
 
 
         }
+
 
 
     }
@@ -348,13 +491,21 @@ function MessageInput(){
         if(mediaRecorderRef.current){
 
 
+
             mediaRecorderRef.current.stop();
 
 
-            setRecording(false);
+
+            mediaRecorderRef.current=null;
+
 
 
         }
+
+
+
+        setRecording(false);
+
 
 
     }
@@ -371,10 +522,17 @@ function MessageInput(){
 
 
 
-        if(!conversationId)
+        if(uploading)
 
             return;
 
+
+
+
+
+        if(!conversationId)
+
+            return;
 
 
 
@@ -401,41 +559,62 @@ function MessageInput(){
             try{
 
 
+
                 setUploading(true);
+
+
 
 
 
                 const response =
 
-                await uploadFile(file);
+                    await uploadFile(
+                        file
+                    );
 
 
 
 
-                fileName=response.fileName;
-
-                fileType=response.fileType;
-
-                fileUrl=response.fileUrl;
 
 
+                fileName =
+                    response.fileName;
 
-                setUploading(false);
+
+
+                fileType =
+                    response.fileType;
+
+
+
+                fileUrl =
+                    response.fileUrl;
+
+
 
 
 
             }
-
             catch(error){
 
 
-                console.error(error);
+                console.error(
 
+                    "Erreur upload",
 
-                setUploading(false);
+                    error
+
+                );
 
 
                 return;
+
+
+            }
+            finally{
+
+
+                setUploading(false);
 
 
             }
@@ -460,9 +639,14 @@ function MessageInput(){
 
             !fileUrl
 
-        )
+        ){
+
 
             return;
+
+
+        }
+
 
 
 
@@ -473,6 +657,8 @@ function MessageInput(){
 
         sendMessage(
 
+
+
             conversationId,
 
             content.trim(),
@@ -481,7 +667,19 @@ function MessageInput(){
 
             fileType,
 
-            fileUrl
+            fileUrl,
+
+            replyMessage
+
+            ?
+
+            replyMessage.id
+
+            :
+
+            null
+
+
 
         );
 
@@ -492,11 +690,20 @@ function MessageInput(){
 
 
 
+
         setContent("");
+
+
 
         removeFile();
 
+
+
         setShowEmoji(false);
+
+
+
+        setReplyMessage(null);
 
 
 
@@ -519,7 +726,37 @@ function MessageInput(){
             if(preview){
 
 
-                URL.revokeObjectURL(preview);
+                URL.revokeObjectURL(
+                    preview
+                );
+
+
+            }
+
+
+
+            if(
+
+                typingTimeout.current
+
+            ){
+
+
+                clearTimeout(
+                    typingTimeout.current
+                );
+
+
+            }
+
+
+
+            if(mediaRecorderRef.current){
+
+
+
+                mediaRecorderRef.current.stop();
+
 
 
             }
@@ -528,9 +765,8 @@ function MessageInput(){
         };
 
 
+
     },[preview]);
-
-
 
 
 
@@ -551,12 +787,64 @@ function MessageInput(){
 
 
 
+            {
+            replyMessage &&
+
+            <div className="reply-preview">
+
+
+                <div>
+
+
+                    <strong>
+
+                        Réponse à :
+
+                    </strong>
+
+
+
+                    <p>
+
+                        {replyMessage.content}
+
+                    </p>
+
+
+                </div>
+
+
+
+
+
+                <button
+
+                    onClick={()=>setReplyMessage(null)}
+
+                >
+
+                    ✕
+
+
+                </button>
+
+
+
+            </div>
+
+
+            }
+
+
+
+
+
+
+
+
 
             {
-
-
             showEmoji &&
-
 
 
             <div className="emoji-panel">
@@ -583,14 +871,10 @@ function MessageInput(){
 
 
             {
-
-
             preview &&
 
 
-
             <div className="upload-preview">
-
 
 
                 <img
@@ -603,7 +887,6 @@ function MessageInput(){
 
 
 
-
                 <button
 
                     onClick={removeFile}
@@ -612,13 +895,11 @@ function MessageInput(){
 
                     ✕
 
-
                 </button>
 
 
 
             </div>
-
 
 
             }
@@ -631,18 +912,15 @@ function MessageInput(){
 
 
 
-
             {
-
-
             file && !preview &&
-
 
 
             <div className="file-preview-bar">
 
 
                 📎
+
 
                 <span>
 
@@ -661,7 +939,6 @@ function MessageInput(){
                     ✕
 
                 </button>
-
 
 
             </div>
@@ -683,20 +960,17 @@ function MessageInput(){
 
 
 
-
                 <button
 
                     className="emoji-button"
 
-                    onClick={()=>setShowEmoji(!showEmoji)}
+                    onClick={()=>setShowEmoji(v=>!v)}
 
                 >
 
                     😊
 
                 </button>
-
-
 
 
 
@@ -729,8 +1003,6 @@ function MessageInput(){
 
 
 
-
-
                 <input
 
 
@@ -740,28 +1012,37 @@ function MessageInput(){
                     placeholder="Écrire un message..."
 
 
-                    onChange={
+                    onChange={e=>
 
-                        e=>
-
-                        handleChange(e.target.value)
+                        handleChange(
+                            e.target.value
+                        )
 
                     }
 
 
 
-                    onKeyDown={
+                    onKeyDown={e=>{
 
-                        e=>{
 
-                            if(e.key==="Enter")
+                        if(
 
-                                handleSend();
+                            e.key==="Enter"
 
+                            &&
+
+                            !e.shiftKey
+
+                        ){
+
+                            e.preventDefault();
+
+                            handleSend();
 
                         }
 
-                    }
+
+                    }}
 
 
                 />
@@ -779,15 +1060,15 @@ function MessageInput(){
 
                     className={
 
-                    recording
+                        recording
 
-                    ?
+                        ?
 
-                    "record-button active"
+                        "record-button active"
 
-                    :
+                        :
 
-                    "record-button"
+                        "record-button"
 
                     }
 
@@ -809,6 +1090,7 @@ function MessageInput(){
 
 
                 >
+
 
                     {
 
@@ -834,20 +1116,22 @@ function MessageInput(){
 
 
 
-
                 <button
 
 
                     className="send-button"
 
 
+
                     onClick={handleSend}
+
 
 
                     disabled={uploading}
 
 
                 >
+
 
 
                     {
@@ -862,13 +1146,11 @@ function MessageInput(){
 
                     "➤"
 
-
                     }
 
 
+
                 </button>
-
-
 
 
 
@@ -879,8 +1161,9 @@ function MessageInput(){
 
 
 
-        </div>
 
+
+        </div>
 
 
     );

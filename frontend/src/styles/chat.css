@@ -2799,3 +2799,199 @@ button:active{
 
 
 
+/* =========================================
+   REPONSE A UN MESSAGE
+========================================= */
+
+
+/* Bouton répondre sur le message */
+.reply-button {
+
+    position: absolute;
+
+    top: 8px;
+
+    right: 8px;
+
+    border: none;
+
+    background: transparent;
+
+    cursor: pointer;
+
+    font-size: 16px;
+
+    opacity: 0;
+
+    transition: 0.2s;
+
+}
+
+
+/* apparition au survol */
+.message-bubble:hover .reply-button {
+
+    opacity: 1;
+
+}
+
+
+
+/* Positionnement du bouton */
+.message-bubble {
+
+    position: relative;
+
+}
+
+
+
+/* aperçu de la réponse avant envoi */
+.reply-preview {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    background: #e8f1ff;
+
+    border-left: 4px solid #2196f3;
+
+    padding: 8px 12px;
+
+    margin-bottom: 8px;
+
+    border-radius: 8px;
+
+    max-width: 100%;
+
+}
+
+
+
+.reply-preview strong {
+
+    color: #1976d2;
+
+    font-size: 14px;
+
+}
+
+
+
+.reply-preview p {
+
+    margin: 3px 0 0;
+
+    color: #555;
+
+    font-size: 13px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    max-width: 250px;
+
+}
+
+
+
+/* bouton fermer aperçu */
+.reply-preview button {
+
+    border: none;
+
+    background: transparent;
+
+    cursor: pointer;
+
+    font-size: 18px;
+
+    color: #555;
+
+}
+
+
+
+/* aperçu dans un message reçu */
+.message-bubble .reply-preview {
+
+
+    background: rgba(255,255,255,0.15);
+
+    border-left-color: #00a884;
+
+
+}
+
+
+
+/* message envoyé */
+.message-row.mine .reply-preview {
+
+
+    background: rgba(255,255,255,0.2);
+
+    border-left-color: white;
+
+
+}
+
+
+
+
+/* mobile */
+@media(max-width:600px){
+
+
+    .reply-button {
+
+
+        opacity: 1;
+
+        font-size:14px;
+
+
+    }
+
+
+    .reply-preview p {
+
+
+        max-width:150px;
+
+
+    }
+
+
+}
+
+.highlight-message {
+
+    animation: messageFlash 1.5s;
+
+}
+
+
+
+@keyframes messageFlash {
+
+    0% {
+
+        background-color:#ffe58a;
+
+    }
+
+
+    100% {
+
+        background-color:transparent;
+
+    }
+
+}

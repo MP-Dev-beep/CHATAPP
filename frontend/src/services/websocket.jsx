@@ -28,6 +28,8 @@ let pendingRead = [];
 
 
 
+
+
 /*
 ================================================
 CHAT WEBSOCKET
@@ -71,8 +73,6 @@ export function connectWebSocket(
 
 
 
-
-
     if(stompClient){
 
         disconnectWebSocket();
@@ -86,9 +86,7 @@ export function connectWebSocket(
 
 
 
-
     stompClient = new Client({
-
 
 
 
@@ -107,8 +105,6 @@ export function connectWebSocket(
 
 
 
-
-
         connectHeaders:{
 
 
@@ -122,12 +118,7 @@ export function connectWebSocket(
 
 
 
-
-
         reconnectDelay:5000,
-
-
-
 
 
 
@@ -152,8 +143,6 @@ export function connectWebSocket(
 
 
 
-
-
         onConnect:()=>{
 
 
@@ -164,12 +153,7 @@ export function connectWebSocket(
 
 
 
-
             connected=true;
-
-
-
-
 
 
 
@@ -190,31 +174,35 @@ export function connectWebSocket(
 
 
 
-                    const data = JSON.parse(
-
-                        frame.body
-
-                    );
+                    try{
 
 
+                        const data = JSON.parse(
+
+                            frame.body
+
+                        );
 
 
-
-                    console.log(
-
-                        "MESSAGE RECU",
-
-                        data
-
-                    );
+                        onMessageReceived(data);
 
 
 
+                    }
+
+                    catch(error){
 
 
+                        console.error(
 
-                    onMessageReceived(data);
+                            "ERREUR MESSAGE",
 
+                            error
+
+                        );
+
+
+                    }
 
 
                 }
@@ -245,19 +233,34 @@ export function connectWebSocket(
                 frame=>{
 
 
-
-                    const data = JSON.parse(
-
-                        frame.body
-
-                    );
+                    try{
 
 
+                        const data = JSON.parse(
+
+                            frame.body
+
+                        );
 
 
+                        onStatusReceived(data);
 
-                    onStatusReceived(data);
 
+                    }
+
+                    catch(error){
+
+
+                        console.error(
+
+                            "ERREUR STATUS",
+
+                            error
+
+                        );
+
+
+                    }
 
 
                 }
@@ -289,11 +292,96 @@ export function connectWebSocket(
 
 
 
-                    onTypingReceived(
+                    try{
 
-                        frame.body
 
-                    );
+
+                        let data;
+
+
+
+                        try{
+
+
+                            data = JSON.parse(
+
+                                frame.body
+
+                            );
+
+
+                        }
+
+                        catch{
+
+
+                            data = frame.body;
+
+
+                        }
+
+
+
+
+
+
+                        if(
+
+                            typeof data === "object"
+
+                        ){
+
+
+                            onTypingReceived(
+
+                                data.username
+
+                                ||
+
+                                data.name
+
+                                ||
+
+                                ""
+
+                            );
+
+
+                        }
+
+                        else{
+
+
+                            onTypingReceived(
+
+                                data
+
+                            );
+
+
+                        }
+
+
+
+
+
+                    }
+
+                    catch(error){
+
+
+
+                        console.error(
+
+                            "ERREUR TYPING",
+
+                            error
+
+                        );
+
+
+                    }
+
 
 
                 }
@@ -312,11 +400,15 @@ export function connectWebSocket(
 
             subscriptions.push(
 
+
                 messageSubscription,
+
 
                 statusSubscription,
 
+
                 typingSubscription
+
 
             );
 
@@ -337,7 +429,6 @@ export function connectWebSocket(
             });
 
 
-
             pendingDelivered=[];
 
 
@@ -355,7 +446,6 @@ export function connectWebSocket(
 
 
             });
-
 
 
             pendingRead=[];
@@ -391,10 +481,7 @@ export function connectWebSocket(
 
 
 
-
-
     });
-
 
 
 
@@ -435,21 +522,15 @@ export function connectPresence(onStatus){
 
 
 
-
-
     if(!token){
-
 
         console.log(
             "PAS TOKEN PRESENCE"
         );
 
-
         return;
 
-
     }
-
 
 
 
@@ -459,16 +540,7 @@ export function connectPresence(onStatus){
 
     if(presenceClient){
 
-
-        console.log(
-
-            "PRESENCE DEJA CONNECTEE"
-
-        );
-
-
         return;
-
 
     }
 
@@ -478,13 +550,7 @@ export function connectPresence(onStatus){
 
 
 
-
-
     presenceClient = new Client({
-
-
-
-
 
 
 
@@ -502,13 +568,7 @@ export function connectPresence(onStatus){
 
 
 
-
-
-
-
-
         connectHeaders:{
-
 
 
             Authorization:
@@ -520,39 +580,7 @@ export function connectPresence(onStatus){
 
 
 
-
-
-
-
-
         reconnectDelay:5000,
-
-
-
-
-
-
-
-
-        debug:(msg)=>{
-
-
-            console.log(
-
-                "PRESENCE",
-
-                msg
-
-            );
-
-
-        },
-
-
-
-
-
-
 
 
 
@@ -565,20 +593,6 @@ export function connectPresence(onStatus){
                 "PRESENCE CONNECTEE"
 
             );
-
-
-
-
-
-
-            if(presenceSubscription){
-
-
-                presenceSubscription.unsubscribe();
-
-
-            }
-
 
 
 
@@ -600,9 +614,7 @@ export function connectPresence(onStatus){
                 frame=>{
 
 
-
                     try{
-
 
 
                         const data = JSON.parse(
@@ -612,24 +624,7 @@ export function connectPresence(onStatus){
                         );
 
 
-
-
-
-                        console.log(
-
-                            "PRESENCE RECUE",
-
-                            data
-
-                        );
-
-
-
-
-
-
                         onStatus(data);
-
 
 
                     }
@@ -649,8 +644,6 @@ export function connectPresence(onStatus){
                     }
 
 
-
-
                 }
 
 
@@ -659,33 +652,11 @@ export function connectPresence(onStatus){
 
 
 
-
-        },
-
-
-
-
-
-
-        onDisconnect:()=>{
-
-
-            console.log(
-
-                "PRESENCE DECONNECTEE"
-
-            );
-
-
         }
 
 
 
-
-
-
     });
-
 
 
 
@@ -697,11 +668,6 @@ export function connectPresence(onStatus){
 
 
 }
-
-
-
-
-
 
 
 
@@ -731,17 +697,13 @@ export function disconnectPresence(){
 
 
 
-
     if(presenceClient){
-
 
 
         presenceClient.deactivate();
 
 
-
         presenceClient=null;
-
 
 
     }
@@ -758,35 +720,9 @@ export function disconnectPresence(){
 
 
 
-export function isPresenceConnected(){
-
-
-
-    return (
-
-        presenceClient !== null
-
-        &&
-
-        presenceClient.connected
-
-    );
-
-
-}
-
-
-
-
-
-
-
-
-
 /*
 ================================================
 ENVOYER MESSAGE
-TEXTE + FICHIER
 ================================================
 */
 
@@ -801,7 +737,9 @@ export function sendMessage(
 
     fileType=null,
 
-    fileUrl=null
+    fileUrl=null,
+
+    replyToId=null
 
 ){
 
@@ -818,7 +756,6 @@ export function sendMessage(
         );
 
 
-
         return;
 
 
@@ -832,19 +769,13 @@ export function sendMessage(
 
 
 
-
-
     stompClient.publish({
-
 
 
 
         destination:
 
         "/app/chat.send",
-
-
-
 
 
 
@@ -859,20 +790,20 @@ export function sendMessage(
             content,
 
 
-
             fileName,
 
 
             fileType,
 
 
-            fileUrl
+            fileUrl,
+
+
+            replyToId
 
 
 
         })
-
-
 
 
 
@@ -892,7 +823,7 @@ export function sendMessage(
 
 /*
 ================================================
-MESSAGE LIVRE ✓✓ GRIS
+DELIVERED
 ================================================
 */
 
@@ -904,7 +835,6 @@ export function sendDelivered(messageId){
     if(!connected){
 
 
-
         pendingDelivered.push(
 
             messageId
@@ -912,12 +842,10 @@ export function sendDelivered(messageId){
         );
 
 
-
         return;
 
 
     }
-
 
 
 
@@ -934,9 +862,14 @@ export function sendDelivered(messageId){
 
 
 
-
-
 function sendDeliveredNow(messageId){
+
+
+
+    if(!stompClient)
+
+        return;
+
 
 
 
@@ -947,8 +880,6 @@ function sendDeliveredNow(messageId){
         destination:
 
         "/app/message.delivered",
-
-
 
 
 
@@ -979,7 +910,7 @@ function sendDeliveredNow(messageId){
 
 /*
 ================================================
-MESSAGE LU ✓✓ BLEU
+READ
 ================================================
 */
 
@@ -991,7 +922,6 @@ export function sendRead(messageId){
     if(!connected){
 
 
-
         pendingRead.push(
 
             messageId
@@ -999,12 +929,10 @@ export function sendRead(messageId){
         );
 
 
-
         return;
 
 
     }
-
 
 
 
@@ -1021,9 +949,14 @@ export function sendRead(messageId){
 
 
 
-
-
 function sendReadNow(messageId){
+
+
+
+    if(!stompClient)
+
+        return;
+
 
 
 
@@ -1034,8 +967,6 @@ function sendReadNow(messageId){
         destination:
 
         "/app/message.read",
-
-
 
 
 
@@ -1075,7 +1006,7 @@ export function sendTyping(conversationId){
 
 
 
-    if(!connected){
+    if(!connected || !stompClient){
 
 
         return;
@@ -1096,8 +1027,6 @@ export function sendTyping(conversationId){
         destination:
 
         "/app/chat.typing",
-
-
 
 
 
@@ -1142,7 +1071,16 @@ export function disconnectWebSocket(){
     subscriptions.forEach(sub=>{
 
 
-        sub.unsubscribe();
+        try{
+
+
+            sub.unsubscribe();
+
+
+        }
+
+        catch(error){}
+
 
 
     });

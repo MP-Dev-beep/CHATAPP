@@ -16,14 +16,12 @@ import {
 
 
 
-
 function ChatHeader(){
-
 
 
     const {
 
-        conversations,
+        conversations = [],
 
         conversationId,
 
@@ -36,16 +34,12 @@ function ChatHeader(){
 
 
 
-
-
     const {
 
         user: currentUser
 
 
     } = useUsers();
-
-
 
 
 
@@ -68,15 +62,13 @@ function ChatHeader(){
 
 
 
-    const currentConversation =
+    const currentConversation = conversations.find(
 
-        conversations.find(
+        conversation =>
 
-            conversation =>
+            Number(conversation?.id) === Number(conversationId)
 
-                conversation.id === conversationId
-
-        );
+    );
 
 
 
@@ -86,15 +78,52 @@ function ChatHeader(){
 
 
 
-    const otherUser =
+    const otherUser = currentConversation?.users?.find(
 
-        currentConversation?.users?.find(
+        user =>
 
-            user =>
+            Number(user?.id) !== Number(currentUser?.id)
 
-                user.id !== currentUser?.id
+    );
 
-        );
+
+
+
+
+
+
+
+
+    /*
+    ================================
+    TYPING SECURE
+    ================================
+    */
+
+
+    let typingText = "";
+
+
+    if(typeof typingUser === "string"){
+
+        typingText = typingUser;
+
+    }
+
+
+    else if(typingUser?.firstname){
+
+        typingText = typingUser.firstname;
+
+    }
+
+
+    else if(typingUser?.email){
+
+        typingText = typingUser.email;
+
+    }
+
 
 
 
@@ -107,6 +136,23 @@ function ChatHeader(){
     function Avatar(){
 
 
+        if(!otherUser){
+
+            return (
+
+                <div className="avatar chat-avatar">
+
+                    ?
+
+                </div>
+
+            );
+
+        }
+
+
+
+
         return (
 
             <div className="header-avatar-wrapper">
@@ -116,36 +162,33 @@ function ChatHeader(){
 
 
                     {
+                        otherUser.avatar ?
 
 
-                    otherUser?.avatar ?
+                        <img
+
+                            src={`http://localhost:8081${otherUser.avatar}`}
+
+                            alt="avatar"
+
+                        />
 
 
-                    <img
-
-                        src={
-                            `http://localhost:8081${otherUser.avatar}`
-                        }
-
-                        alt="avatar"
-
-                    />
+                        :
 
 
-                    :
+                        otherUser.firstname ?
 
 
-                    otherUser?.firstname
-
-                    ?
-
-                    otherUser.firstname.charAt(0)
+                        otherUser.firstname
+                            .charAt(0)
+                            .toUpperCase()
 
 
-                    :
+                        :
 
-                    "?"
 
+                        "?"
 
                     }
 
@@ -157,13 +200,9 @@ function ChatHeader(){
 
 
                 {
+                    otherUser.online &&
 
-                otherUser?.online
-
-                &&
-
-                <span className="online-dot"></span>
-
+                    <span className="online-dot"></span>
                 }
 
 
@@ -192,6 +231,7 @@ function ChatHeader(){
 
 
 
+
             <div className="header-user">
 
 
@@ -204,23 +244,20 @@ function ChatHeader(){
                 <div className="header-info">
 
 
+
                     <h3>
 
 
                         {
+                            otherUser
 
+                            ?
 
-                        otherUser
+                            `${otherUser.firstname ?? ""} ${otherUser.lastname ?? ""}`
 
-                        ?
+                            :
 
-                        `${otherUser.firstname} ${otherUser.lastname}`
-
-                        :
-
-                        "Sélectionnez une conversation"
-
-
+                            "Sélectionnez une conversation"
                         }
 
 
@@ -232,60 +269,50 @@ function ChatHeader(){
 
 
 
+
                     {
-
-                    otherUser &&
-
-
-                    (
-
-                        typingUser
+                        otherUser &&
 
 
-                        ?
+                        (
 
+                            typingText !== ""
 
-                        <p className="typing">
-
-
-                            ✍️ {typingUser}
-
-                            {" est en train d'écrire..."}
-
-
-                        </p>
-
-
-
-                        :
-
-
-
-                        <p className="online-status">
-
-
-                            {
-
-
-                            otherUser.online
 
                             ?
 
-                            "🟢 En ligne"
+
+                            <p className="typing">
+
+                                ✍️ {typingText} est en train d'écrire...
+
+
+                            </p>
+
 
                             :
 
-                            "⚫ Hors ligne"
+
+                            <p className="online-status">
 
 
-                            }
+                                {
+                                    otherUser.online
+
+                                    ?
+
+                                    "🟢 En ligne"
+
+                                    :
+
+                                    "⚫ Hors ligne"
+                                }
 
 
-                        </p>
+                            </p>
 
 
-                    )
-
+                        )
 
                     }
 
@@ -327,6 +354,9 @@ function ChatHeader(){
 
 
 
+
+
+
                 <button
 
                     className="header-button"
@@ -339,22 +369,23 @@ function ChatHeader(){
 
                     {
 
+                        dark
 
-                    dark
+                        ?
 
-                    ?
+                        "☀️"
 
-                    "☀️"
+                        :
 
-                    :
-
-                    "🌙"
-
+                        "🌙"
 
                     }
 
 
                 </button>
+
+
+
 
 
 
@@ -369,6 +400,7 @@ function ChatHeader(){
                 >
 
                     ⋮
+
 
                 </button>
 

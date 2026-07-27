@@ -3,6 +3,13 @@ import {
 } from "../context/UserContext";
 
 
+import {
+    useConversation
+} from "../context/ConversationContext";
+
+
+
+
 
 
 function MessageBubble({
@@ -12,12 +19,16 @@ function MessageBubble({
 }){
 
 
+    const {
+        user
+    } = useUsers();
+
+
+
 
     const {
-
-        user
-
-    } = useUsers();
+        setReplyMessage
+    } = useConversation();
 
 
 
@@ -57,11 +68,8 @@ function MessageBubble({
                 [],
 
                 {
-
                     hour:"2-digit",
-
                     minute:"2-digit"
-
                 }
 
             );
@@ -77,16 +85,117 @@ function MessageBubble({
 
 
 
-    function renderStatus(){
+    function handleReply(){
 
+
+        setReplyMessage({
+
+            id:message.id,
+
+
+            content:
+
+            message.content
+
+            ||
+
+            message.fileName
+
+            ||
+
+            "Fichier"
+
+        });
+
+
+    }
+
+
+
+
+
+
+
+
+
+    // Aller au message original de la réponse
+
+    function goToReplyMessage(){
+
+
+        if(!message.replyToId)
+
+            return;
+
+
+
+        const element = document.getElementById(
+
+            `message-${message.replyToId}`
+
+        );
+
+
+
+
+        if(element){
+
+
+            element.scrollIntoView({
+
+                behavior:"smooth",
+
+                block:"center"
+
+            });
+
+
+
+
+
+            element.classList.add(
+
+                "highlight-message"
+
+            );
+
+
+
+
+
+            setTimeout(()=>{
+
+
+                element.classList.remove(
+
+                    "highlight-message"
+
+                );
+
+
+            },1500);
+
+
+
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+
+    function renderStatus(){
 
 
         if(!isMine)
 
             return null;
-
-
-
 
 
 
@@ -113,17 +222,7 @@ function MessageBubble({
 
 
 
-
-
-        if(
-
-            message.delivered
-
-            &&
-
-            !message.read
-
-        ){
+        if(message.delivered && !message.read){
 
 
             return (
@@ -138,7 +237,6 @@ function MessageBubble({
 
 
         }
-
 
 
 
@@ -179,9 +277,11 @@ function MessageBubble({
 
     const fileUrl =
 
+
         message.fileUrl
 
         ?
+
 
         "http://localhost:8081"
 
@@ -189,9 +289,14 @@ function MessageBubble({
 
         message.fileUrl
 
+
         :
 
         null;
+
+
+
+
 
 
 
@@ -231,8 +336,33 @@ function MessageBubble({
 
 
 
-
             <div className="message-bubble">
+
+
+
+
+
+
+
+
+                <button
+
+                    className="reply-button"
+
+                    onClick={handleReply}
+
+                    title="Répondre"
+
+                >
+
+                    ↩️
+
+                </button>
+
+
+
+
+
 
 
 
@@ -242,11 +372,91 @@ function MessageBubble({
 
                 {
 
+
+                message.replyToId &&
+
+
+                <div
+
+
+                    className="reply-preview"
+
+
+                    onClick={goToReplyMessage}
+
+
+                    style={{
+
+                        cursor:"pointer"
+
+                    }}
+
+
+                >
+
+
+
+                    <span>
+
+                        ↩ Réponse à :
+
+                    </span>
+
+
+
+
+
+                    <p>
+
+
+                        {
+
+                        message.replyMessage?.content
+
+                        ||
+
+                        message.replyContent
+
+                        ||
+
+                        "Message supprimé"
+
+
+                        }
+
+
+                    </p>
+
+
+
+                </div>
+
+
+
+                }
+
+
+
+
+
+
+
+
+
+
+
+
+                {
+
+
                 message.content &&
 
 
+                <p
 
-                <p className="message-text">
+                    className="message-text"
+
+                >
 
 
                     {message.content}
@@ -265,21 +475,26 @@ function MessageBubble({
 
 
 
+
+
+
                 {
 
 
-                message.fileType==="IMAGE"
-
-                &&
+                message.fileType === "IMAGE" &&
 
 
                 <img
 
+
                     src={fileUrl}
 
-                    alt={message.fileName}
+
+                    alt={message.fileName || ""}
+
 
                     className="chat-image"
+
 
                 />
 
@@ -294,27 +509,33 @@ function MessageBubble({
 
 
 
+
+
+
                 {
 
 
-                message.fileType==="VIDEO"
-
-                &&
+                message.fileType === "VIDEO" &&
 
 
                 <video
 
+
                     controls
+
 
                     className="chat-video"
 
+
                 >
+
 
                     <source
 
                         src={fileUrl}
 
                     />
+
 
                 </video>
 
@@ -329,21 +550,26 @@ function MessageBubble({
 
 
 
+
+
+
                 {
 
 
-                message.fileType==="AUDIO"
-
-                &&
+                message.fileType === "AUDIO" &&
 
 
                 <audio
 
+
                     controls
+
 
                     className="chat-audio"
 
+
                 >
+
 
                     <source
 
@@ -365,41 +591,55 @@ function MessageBubble({
 
 
 
+
+
+
                 {
 
 
                 (
 
-                    message.fileType==="DOCUMENT"
+                    message.fileType === "DOCUMENT"
 
                     ||
 
-                    message.fileType==="PDF"
+                    message.fileType === "PDF"
 
                 )
+
 
                 &&
 
 
                 <a
 
+
                     href={fileUrl}
+
 
                     target="_blank"
 
+
                     rel="noreferrer"
+
 
                     className="chat-document"
 
+
                 >
+
 
                     📄
 
+
                     <span>
+
 
                         {message.fileName}
 
+
                     </span>
+
 
 
                 </a>
@@ -415,26 +655,37 @@ function MessageBubble({
 
 
 
+
+
+
                 <div className="message-footer">
+
 
 
                     <span>
 
+
                         {formatTime(message.sentAt)}
+
 
                     </span>
 
 
 
 
+
                     {
 
+
                         renderStatus()
+
 
                     }
 
 
+
                 </div>
+
 
 
 
@@ -451,11 +702,12 @@ function MessageBubble({
 
 
 
+
         </div>
 
 
-    );
 
+    );
 
 
 }

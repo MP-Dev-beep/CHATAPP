@@ -32,11 +32,7 @@ import {
 
 
 
-
 const ConversationContext = createContext();
-
-
-
 
 
 
@@ -45,7 +41,9 @@ const ConversationContext = createContext();
 export function ConversationProvider({children}){
 
 
-    const {user} = useUsers();
+    const {
+        user
+    } = useUsers();
 
 
 
@@ -56,12 +54,10 @@ export function ConversationProvider({children}){
 
 
 
-
     const [
         conversationId,
         setConversationId
     ] = useState(null);
-
 
 
 
@@ -72,7 +68,6 @@ export function ConversationProvider({children}){
 
 
 
-
     const [
         typingUser,
         setTypingUser
@@ -80,10 +75,16 @@ export function ConversationProvider({children}){
 
 
 
+    const [
+        replyMessage,
+        setReplyMessage
+    ] = useState(null);
+
+
+
     const typingTimer = useRef(null);
 
-
-
+    const currentSocketConversation = useRef(null);
 
 
 
@@ -100,22 +101,49 @@ export function ConversationProvider({children}){
 
 
             setConversations(
-                data || []
+                Array.isArray(data)
+                ? data
+                : []
             );
 
 
         }
         catch(error){
 
-
             console.error(
-                "Erreur conversations",
+                "Erreur chargement conversations",
                 error
             );
 
+        }
+
+    }
+
+
+
+
+
+
+
+
+    function clearTyping(){
+
+
+        if(typingTimer.current){
+
+
+            clearTimeout(
+                typingTimer.current
+            );
+
+
+            typingTimer.current=null;
 
         }
 
+
+
+        setTypingUser(null);
 
     }
 
@@ -130,18 +158,9 @@ export function ConversationProvider({children}){
     async function openConversation(id){
 
 
-        if(!user){
+        if(!user || !id)
 
             return;
-
-        }
-
-
-
-
-
-        setConversationId(id);
-
 
 
 
@@ -149,19 +168,50 @@ export function ConversationProvider({children}){
         try{
 
 
-            /*
-            ===========================
-            CHARGEMENT HISTORIQUE
-            ===========================
-            */
+            // éviter plusieurs connexions identiques
+
+            if(
+                currentSocketConversation.current
+                ===
+                id
+            ){
+
+                return;
+
+            }
 
 
-            const history = await getMessages(id);
+
+
+            disconnectWebSocket();
+
+
+            clearTyping();
+
+
+
+            currentSocketConversation.current=id;
+
+
+
+            setConversationId(id);
+
+
+
+            const history =
+                await getMessages(id);
+
 
 
 
             setMessages(
-                history || []
+
+                Array.isArray(history)
+
+                ? history
+
+                : []
+
             );
 
 
@@ -171,14 +221,8 @@ export function ConversationProvider({children}){
 
 
 
-            /*
-            ===========================
-            CONNEXION WEBSOCKET
-            ===========================
-            */
-
-
             connectWebSocket(
+
 
 
                 id,
@@ -188,33 +232,38 @@ export function ConversationProvider({children}){
 
 
 
-                /*
-                NOUVEAU MESSAGE
-                */
-
-
                 (message)=>{
+
+
+
+                    if(!message || !message.id)
+
+                        return;
+
+
 
 
 
                     setMessages(prev=>{
 
 
-                        const existe =
+                        const exists = prev.some(
 
-                        prev.some(
+                            m=>
 
-                            m=>m.id===message.id
+                            Number(m.id)
+
+                            ===
+
+                            Number(message.id)
 
                         );
 
 
 
-                        if(existe){
+                        if(exists)
 
                             return prev;
-
-                        }
 
 
 
@@ -228,7 +277,6 @@ export function ConversationProvider({children}){
                         ];
 
 
-
                     });
 
 
@@ -236,15 +284,15 @@ export function ConversationProvider({children}){
 
 
 
-                    /*
-                    MESSAGE RECU
-                    => ✓✓ GRIS
-                    */
 
 
                     if(
 
-                        message.senderId !== user.id
+                        Number(message.senderId)
+
+                        !==
+
+                        Number(user.id)
 
                     ){
 
@@ -255,8 +303,8 @@ export function ConversationProvider({children}){
 
                         );
 
-
                     }
+
 
 
 
@@ -267,12 +315,14 @@ export function ConversationProvider({children}){
                     setConversations(prev=>
 
 
-
                         prev.map(conv=>
 
 
+                            Number(conv.id)
 
-                            conv.id===id
+                            ===
+
+                            Number(id)
 
 
                             ?
@@ -280,33 +330,25 @@ export function ConversationProvider({children}){
 
                             {
 
-
                                 ...conv,
 
 
                                 lastMessage:
-
-                                message.content,
+                                    message.content,
 
 
                                 lastMessageTime:
-
-                                message.sentAt
-
-
+                                    message.sentAt
 
                             }
 
 
                             :
 
-
                             conv
 
 
-
                         )
-
 
 
                     );
@@ -323,24 +365,29 @@ export function ConversationProvider({children}){
 
 
 
-                /*
-                STATUS MESSAGE
-                */
-
-
                 (status)=>{
+
+
+
+                    if(!status || !status.id)
+
+                        return;
+
+
 
 
 
                     setMessages(prev=>
 
 
-
                         prev.map(message=>
 
 
+                            Number(message.id)
 
-                            message.id===status.id
+                            ===
+
+                            Number(status.id)
 
 
                             ?
@@ -353,27 +400,19 @@ export function ConversationProvider({children}){
 
 
                                 delivered:
-
-                                status.delivered,
-
+                                    status.delivered,
 
 
                                 read:
-
-                                status.read,
-
+                                    status.read,
 
 
                                 deliveredAt:
-
-                                status.deliveredAt,
-
+                                    status.deliveredAt,
 
 
                                 readAt:
-
-                                status.readAt
-
+                                    status.readAt
 
 
                             }
@@ -385,13 +424,10 @@ export function ConversationProvider({children}){
                             message
 
 
-
                         )
 
 
-
                     );
-
 
 
                 },
@@ -404,32 +440,44 @@ export function ConversationProvider({children}){
 
 
 
-
-                /*
-                TYPING
-                */
-
-
                 (username)=>{
 
 
 
-                    setTypingUser(
-                        username
-                    );
+                    clearTyping();
 
 
 
 
-                    if(typingTimer.current){
 
+                    if(
 
-                        clearTimeout(
-                            typingTimer.current
-                        );
+                        typeof username
 
+                        !==
+
+                        "string"
+
+                        ||
+
+                        username.trim()===""
+
+                    ){
+
+                        return;
 
                     }
+
+
+
+
+
+                    setTypingUser(
+
+                        username
+
+                    );
+
 
 
 
@@ -437,18 +485,17 @@ export function ConversationProvider({children}){
                     typingTimer.current =
 
 
-                    setTimeout(()=>{
+                        setTimeout(()=>{
 
 
-                        setTypingUser(null);
+                            setTypingUser(null);
 
 
-                    },2000);
+                        },2000);
 
 
 
                 }
-
 
 
             );
@@ -461,11 +508,6 @@ export function ConversationProvider({children}){
 
 
 
-            /*
-            ===========================
-            MARQUER LES MESSAGES COMME LUS
-            ===========================
-            */
 
 
             history.forEach(message=>{
@@ -473,14 +515,21 @@ export function ConversationProvider({children}){
 
                 if(
 
-                    message.senderId !== user.id
+
+                    Number(message.senderId)
+
+                    !==
+
+                    Number(user.id)
+
 
                     &&
 
+
                     !message.read
 
-                ){
 
+                ){
 
 
                     sendRead(
@@ -493,7 +542,6 @@ export function ConversationProvider({children}){
                 }
 
 
-
             });
 
 
@@ -504,12 +552,6 @@ export function ConversationProvider({children}){
 
 
 
-            /*
-            ===========================
-            RESET BADGE
-            ===========================
-            */
-
 
             setConversations(prev=>
 
@@ -517,7 +559,11 @@ export function ConversationProvider({children}){
                 prev.map(conv=>
 
 
-                    conv.id===id
+                    Number(conv.id)
+
+                    ===
+
+                    Number(id)
 
 
                     ?
@@ -525,7 +571,9 @@ export function ConversationProvider({children}){
 
                     {
 
+
                         ...conv,
+
 
                         unreadCount:0
 
@@ -539,7 +587,6 @@ export function ConversationProvider({children}){
                     conv
 
 
-
                 )
 
 
@@ -548,6 +595,7 @@ export function ConversationProvider({children}){
 
 
         }
+
         catch(error){
 
 
@@ -563,10 +611,7 @@ export function ConversationProvider({children}){
         }
 
 
-
     }
-
-
 
 
 
@@ -584,11 +629,10 @@ export function ConversationProvider({children}){
 
         if(user){
 
-
             loadConversations();
 
-
         }
+
 
 
 
@@ -596,32 +640,19 @@ export function ConversationProvider({children}){
         return ()=>{
 
 
+            clearTyping();
+
+
             disconnectWebSocket();
 
 
-
-
-            if(typingTimer.current){
-
-
-                clearTimeout(
-
-                    typingTimer.current
-
-                );
-
-
-            }
+            currentSocketConversation.current=null;
 
 
         };
 
 
-
     },[user]);
-
-
-
 
 
 
@@ -637,37 +668,50 @@ export function ConversationProvider({children}){
         <ConversationContext.Provider
 
 
-            value={{
+            value={
 
 
 
-                conversations,
+                {
 
 
-                conversationId,
+                    conversations,
 
 
-                messages,
+                    conversationId,
 
 
-                typingUser,
+                    messages,
 
 
-                setMessages,
+                    typingUser,
 
 
-                openConversation,
+                    setMessages,
 
 
-                loadConversations,
+                    openConversation,
 
 
-                refreshConversations:loadConversations
+                    loadConversations,
+
+
+                    refreshConversations:
+                        loadConversations,
 
 
 
-            }}
+                    replyMessage,
 
+
+                    setReplyMessage
+
+
+
+                }
+
+
+            }
 
 
         >
@@ -676,12 +720,10 @@ export function ConversationProvider({children}){
             {children}
 
 
-
         </ConversationContext.Provider>
 
 
     );
-
 
 
 }
@@ -693,14 +735,13 @@ export function ConversationProvider({children}){
 
 
 
-
 export function useConversation(){
 
 
-
-    const context = useContext(
-        ConversationContext
-    );
+    const context =
+        useContext(
+            ConversationContext
+        );
 
 
 
@@ -712,7 +753,6 @@ export function useConversation(){
             "useConversation doit être utilisé dans ConversationProvider"
 
         );
-
 
     }
 
