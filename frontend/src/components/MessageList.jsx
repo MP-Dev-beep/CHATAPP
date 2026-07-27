@@ -31,9 +31,7 @@ function MessageList(){
 
 
 
-    const bottomRef =
-        useRef();
-
+    const bottomRef = useRef();
 
 
 
@@ -59,9 +57,7 @@ function MessageList(){
 
 
 
-
     return (
-
 
 
         <div className="messages">
@@ -70,20 +66,46 @@ function MessageList(){
 
 
 
+
             {
 
-            messages.length===0 ?
+            messages.length === 0 ?
+
 
 
             (
 
-                <p>
+                <div className="empty-chat">
 
-                    Aucun message
 
-                </p>
+                    <div className="empty-icon">
+
+                        💬
+
+                    </div>
+
+
+                    <h3>
+
+                        Aucun message
+
+                    </h3>
+
+
+
+                    <p>
+
+                        Envoyez votre premier message
+
+                    </p>
+
+
+
+                </div>
+
 
             )
+
 
 
             :
@@ -106,7 +128,6 @@ function MessageList(){
                 />
 
 
-
             ))
 
 
@@ -118,12 +139,7 @@ function MessageList(){
 
 
 
-
-
             <div ref={bottomRef}/>
-
-
-
 
 
 

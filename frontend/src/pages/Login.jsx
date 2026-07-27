@@ -9,104 +9,217 @@ import {
 
 
 
+
+
+
 function Login(){
 
 
-    const [email,setEmail] =
-        useState("");
 
+    const [email,setEmail]=useState("");
 
-    const [password,setPassword] =
-        useState("");
-
+    const [password,setPassword]=useState("");
 
 
 
-   async function handleLogin(){
-
-    console.log("Données envoyées :", {
-        email,
-        password
-    });
 
 
-    try{
-
-        await login({
-            email,
-            password
-        });
 
 
-        window.location.reload();
 
 
-    }catch(error){
+    async function handleLogin(){
 
-        console.error(
-            "Erreur connexion",
-            error
-        );
+
+
+        try{
+
+
+
+            await login({
+
+                email,
+
+                password
+
+            });
+
+
+
+
+
+            window.location.reload();
+
+
+
+        }
+
+        catch(error){
+
+
+
+            console.error(
+
+                "Erreur connexion",
+
+                error
+
+            );
+
+
+        }
+
+
 
     }
 
-}
+
+
+
+
+
 
 
 
     return (
 
-        <div>
 
 
-            <h2>
-                Connexion
-            </h2>
+        <div className="login-page">
 
 
 
-            <input
 
-                placeholder="Email"
 
-                value={email}
-
-                onChange={
-                    e => setEmail(e.target.value)
-                }
-
-            />
+            <div className="login-card">
 
 
 
-            <input
 
-                type="password"
 
-                placeholder="Mot de passe"
+                <div className="login-logo">
 
-                value={password}
+                    💬
 
-                onChange={
-                    e => setPassword(e.target.value)
-                }
-
-            />
+                </div>
 
 
 
-            <button
-                onClick={handleLogin}
-            >
 
-                Se connecter
 
-            </button>
+                <h1>
+
+                    ChatApp
+
+                </h1>
+
+
+
+                <p>
+
+                    Connectez-vous à votre espace
+
+                </p>
+
+
+
+
+
+
+
+
+                <input
+
+
+                    placeholder="Email"
+
+
+                    value={email}
+
+
+                    onChange={
+
+                        e=>
+
+                        setEmail(
+
+                            e.target.value
+
+                        )
+
+                    }
+
+
+                />
+
+
+
+
+
+
+
+
+                <input
+
+
+                    type="password"
+
+
+                    placeholder="Mot de passe"
+
+
+                    value={password}
+
+
+                    onChange={
+
+                        e=>
+
+                        setPassword(
+
+                            e.target.value
+
+                        )
+
+                    }
+
+
+                />
+
+
+
+
+
+
+
+
+
+                <button
+
+                    onClick={handleLogin}
+
+                >
+
+                    Se connecter
+
+                </button>
+
+
+
+
+
+            </div>
+
+
+
+
 
 
         </div>
 
+
     );
+
 
 
 }

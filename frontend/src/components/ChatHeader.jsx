@@ -104,6 +104,84 @@ function ChatHeader(){
 
 
 
+    function Avatar(){
+
+
+        return (
+
+            <div className="header-avatar-wrapper">
+
+
+                <div className="avatar chat-avatar">
+
+
+                    {
+
+
+                    otherUser?.avatar ?
+
+
+                    <img
+
+                        src={
+                            `http://localhost:8081${otherUser.avatar}`
+                        }
+
+                        alt="avatar"
+
+                    />
+
+
+                    :
+
+
+                    otherUser?.firstname
+
+                    ?
+
+                    otherUser.firstname.charAt(0)
+
+
+                    :
+
+                    "?"
+
+
+                    }
+
+
+                </div>
+
+
+
+
+
+                {
+
+                otherUser?.online
+
+                &&
+
+                <span className="online-dot"></span>
+
+                }
+
+
+
+            </div>
+
+        );
+
+    }
+
+
+
+
+
+
+
+
+
     return (
 
 
@@ -114,173 +192,106 @@ function ChatHeader(){
 
 
 
+            <div className="header-user">
 
-            <div className="avatar">
 
+                <Avatar />
 
-                {
 
 
-                otherUser?.avatar ?
 
 
-                <img
+                <div className="header-info">
 
-                    src={
-                        `http://localhost:8081${otherUser.avatar}`
-                    }
 
-                    alt="avatar"
-
-                />
-
-
-                :
-
-
-                otherUser?.firstname
-
-                ?
-
-                otherUser.firstname.charAt(0)
-
-
-                :
-
-                "?"
-
-
-                }
-
-
-            </div>
-
-
-
-
-
-
-
-
-
-            <div>
-
-
-
-                <h3>
-
-
-                    {
-
-
-                    otherUser
-
-
-                    ?
-
-
-                    `${otherUser.firstname} ${otherUser.lastname}`
-
-
-                    :
-
-
-                    "Sélectionnez une conversation"
-
-
-                    }
-
-
-                </h3>
-
-
-
-
-
-
-
-
-
-                {
-
-
-                otherUser &&
-
-
-
-                (
-
-
-
-                    typingUser
-
-
-                    ?
-
-
-
-                    <p className="typing">
-
-
-                        ✍️
-
-
-                        {" "}
-
-
-                        {typingUser}
-
-
-                        {" est en train d'écrire..."}
-
-
-
-                    </p>
-
-
-
-
-                    :
-
-
-
-                    <span>
+                    <h3>
 
 
                         {
 
 
-                        otherUser.online
-
+                        otherUser
 
                         ?
 
-
-                        "🟢 En ligne"
-
+                        `${otherUser.firstname} ${otherUser.lastname}`
 
                         :
 
-
-                        "⚫ Hors ligne"
+                        "Sélectionnez une conversation"
 
 
                         }
 
 
-
-                    </span>
-
+                    </h3>
 
 
 
-                )
 
 
 
-                }
+
+                    {
+
+                    otherUser &&
 
 
+                    (
+
+                        typingUser
+
+
+                        ?
+
+
+                        <p className="typing">
+
+
+                            ✍️ {typingUser}
+
+                            {" est en train d'écrire..."}
+
+
+                        </p>
+
+
+
+                        :
+
+
+
+                        <p className="online-status">
+
+
+                            {
+
+
+                            otherUser.online
+
+                            ?
+
+                            "🟢 En ligne"
+
+                            :
+
+                            "⚫ Hors ligne"
+
+
+                            }
+
+
+                        </p>
+
+
+                    )
+
+
+                    }
+
+
+
+                </div>
 
 
 
@@ -294,40 +305,80 @@ function ChatHeader(){
 
 
 
-
-
-            <button
-
-                className="theme-button"
-
-                onClick={toggleTheme}
-
-            >
-
-
-                {
-
-
-                dark
-
-
-                ?
-
-
-                "☀️"
-
-
-                :
-
-
-                "🌙"
-
-
-                }
+            <div className="header-actions">
 
 
 
-            </button>
+
+
+                <button
+
+                    className="header-button"
+
+                    title="Recherche"
+
+                >
+
+                    🔍
+
+                </button>
+
+
+
+
+
+                <button
+
+                    className="header-button"
+
+                    title="Changer thème"
+
+                    onClick={toggleTheme}
+
+                >
+
+                    {
+
+
+                    dark
+
+                    ?
+
+                    "☀️"
+
+                    :
+
+                    "🌙"
+
+
+                    }
+
+
+                </button>
+
+
+
+
+
+                <button
+
+                    className="header-button"
+
+                    title="Menu"
+
+                >
+
+                    ⋮
+
+                </button>
+
+
+
+
+
+            </div>
+
+
 
 
 

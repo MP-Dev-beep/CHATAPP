@@ -25,13 +25,15 @@ import Profile from "../pages/Profile";
 
 
 
+
+
 function Sidebar(){
 
 
 
     const {
 
-        conversations = [],
+        conversations=[],
 
         loadConversations,
 
@@ -45,11 +47,13 @@ function Sidebar(){
 
 
 
+
     const {
 
         search,
 
-        onlineUsers = []
+        onlineUsers=[]
+
 
     } = useUsers();
 
@@ -60,28 +64,14 @@ function Sidebar(){
 
 
 
-    const [
-        searchText,
-        setSearchText
-    ] = useState("");
+
+    const [searchText,setSearchText]=useState("");
+
+    const [results,setResults]=useState([]);
+
+    const [showProfile,setShowProfile]=useState(false);
 
 
-
-
-
-    const [
-        results,
-        setResults
-    ] = useState([]);
-
-
-
-
-
-    const [
-        showProfile,
-        setShowProfile
-    ] = useState(false);
 
 
 
@@ -92,8 +82,11 @@ function Sidebar(){
     const currentUserId =
 
         Number(
+
             localStorage.getItem("userId")
+
         );
+
 
 
 
@@ -121,14 +114,10 @@ function Sidebar(){
     function logout(){
 
 
-        localStorage.removeItem(
-            "token"
-        );
 
+        localStorage.removeItem("token");
 
-        localStorage.removeItem(
-            "userId"
-        );
+        localStorage.removeItem("userId");
 
 
         window.location.reload();
@@ -147,11 +136,12 @@ function Sidebar(){
     function getOtherUser(conversation){
 
 
+
         return conversation.users?.find(
 
-            user =>
+            user=>
 
-            user.id !== currentUserId
+            user.id!==currentUserId
 
         );
 
@@ -176,7 +166,9 @@ function Sidebar(){
 
 
         return onlineUsers.includes(
+
             user.email
+
         );
 
 
@@ -193,13 +185,16 @@ function Sidebar(){
     async function startConversation(userId){
 
 
+
         try{
 
 
-            const conversation =
+            const conversation=
 
                 await createConversation(
+
                     userId
+
                 );
 
 
@@ -209,9 +204,10 @@ function Sidebar(){
 
 
 
-
             openConversation(
+
                 conversation.id
+
             );
 
 
@@ -223,13 +219,11 @@ function Sidebar(){
 
 
         }
+
         catch(error){
 
 
-            console.error(
-                "Erreur création conversation",
-                error
-            );
+            console.error(error);
 
 
         }
@@ -248,7 +242,9 @@ function Sidebar(){
     async function handleSearch(value){
 
 
+
         setSearchText(value);
+
 
 
 
@@ -256,6 +252,7 @@ function Sidebar(){
 
 
             setResults([]);
+
 
             return;
 
@@ -265,28 +262,25 @@ function Sidebar(){
 
 
 
+
         try{
 
 
-            const data =
+            const data=
 
                 await search(value);
 
 
 
-            setResults(
-                data || []
-            );
+            setResults(data || []);
 
 
         }
+
         catch(error){
 
 
-            console.error(
-                "Erreur recherche",
-                error
-            );
+            console.error(error);
 
 
         }
@@ -307,7 +301,7 @@ function Sidebar(){
 
         return (
 
-            <div className="avatar">
+            <div className="contact-avatar">
 
 
                 {
@@ -315,10 +309,13 @@ function Sidebar(){
                 user?.avatar ?
 
 
+
                 <img
 
                     src={
-                        `http://localhost:8081${user.avatar}`
+
+                    `http://localhost:8081${user.avatar}`
+
                     }
 
                     alt="avatar"
@@ -343,6 +340,21 @@ function Sidebar(){
                 }
 
 
+
+
+
+                {
+
+                isOnline(user)
+
+                &&
+
+                <span className="online-dot"/>
+
+                }
+
+
+
             </div>
 
         );
@@ -363,15 +375,14 @@ function Sidebar(){
 
         return (
 
-
             <div className="sidebar">
 
 
                 <button
 
-                    onClick={
-                        ()=>setShowProfile(false)
-                    }
+                    className="back-button"
+
+                    onClick={()=>setShowProfile(false)}
 
                 >
 
@@ -381,11 +392,10 @@ function Sidebar(){
 
 
 
-                <Profile />
+                <Profile/>
 
 
             </div>
-
 
         );
 
@@ -403,210 +413,185 @@ function Sidebar(){
     return (
 
 
-        <div className="sidebar">
+        <aside className="sidebar">
 
 
 
-            <h2>
 
-                ChatApp
 
-            </h2>
 
+            <div className="sidebar-top">
 
 
 
+                <h2>
 
+                    ChatApp
 
+                </h2>
 
-            <button
 
-                onClick={
-                    ()=>setShowProfile(true)
-                }
 
-            >
 
-                👤 Mon profil
 
-            </button>
+                <div className="sidebar-actions">
 
 
+                    <button
 
+                        onClick={()=>setShowProfile(true)}
 
+                    >
 
+                        👤
 
+                    </button>
 
-            <button
 
-                onClick={logout}
 
-            >
+                    <button
 
-                Déconnexion
+                        onClick={logout}
 
-            </button>
+                    >
 
+                        🚪
 
+                    </button>
 
 
+                </div>
 
 
+            </div>
 
 
 
-            <input
 
 
-                className="search-input"
 
 
-                placeholder="Rechercher un utilisateur..."
 
 
-                value={searchText}
+            <div className="search-box">
 
 
+                🔍
 
-                onChange={
 
-                    e=>
+                <input
 
-                    handleSearch(
-                        e.target.value
-                    )
 
-                }
+                    value={searchText}
 
 
-            />
+                    placeholder="Rechercher..."
 
 
+                    onChange={
 
+                        e=>
 
+                        handleSearch(
 
+                            e.target.value
 
-
-
-
-            {
-            
-            results.length > 0 &&
-
-            <>
-
-
-            <h3>
-
-                Résultats
-
-            </h3>
-
-
-
-
-
-
-            {
-
-            results.map(user=>(
-
-
-
-                <div
-
-
-                    className="contact"
-
-
-                    key={user.id}
-
-
-                    onClick={
-
-                        ()=>startConversation(
-                            user.id
                         )
 
                     }
 
 
-                >
+                />
 
 
-
-                    <Avatar user={user}/>
-
-
-
-
-
-                    <div>
-
-
-                        <strong>
-
-                            {user.firstname}
-
-                            {" "}
-
-                            {user.lastname}
-
-
-                        </strong>
+            </div>
 
 
 
 
 
-                        <span>
-
-
-                            {
-
-                            isOnline(user)
-
-                            ?
-
-                            " 🟢"
-
-                            :
-
-                            " ⚫"
-
-                            }
-
-
-                        </span>
 
 
 
 
+            {
 
-                        <p>
 
-                            Nouvelle discussion
+            results.length>0 &&
 
-                        </p>
 
+            <div className="search-results">
+
+
+                <h4>
+
+                    Résultats
+
+                </h4>
+
+
+
+                {
+
+                results.map(user=>(
+
+
+
+                    <div
+
+
+                        className="conversation-item"
+
+
+                        key={user.id}
+
+
+                        onClick={()=>startConversation(user.id)}
+
+                    >
+
+
+
+                        <Avatar user={user}/>
+
+
+
+                        <div>
+
+
+                            <strong>
+
+                                {user.firstname}
+
+                                {" "}
+
+                                {user.lastname}
+
+                            </strong>
+
+
+                            <small>
+
+                                Nouvelle discussion
+
+                            </small>
+
+
+                        </div>
 
 
                     </div>
 
 
 
-                </div>
+                ))
 
 
 
-            ))
+                }
 
 
-            }
-
-
-
-            </>
+            </div>
 
 
             }
@@ -619,10 +604,7 @@ function Sidebar(){
 
 
 
-
-
-
-            <h3>
+            <h3 className="section-title">
 
                 Conversations
 
@@ -636,9 +618,14 @@ function Sidebar(){
 
 
 
+            <div className="conversation-list">
+
+
+
             {
 
-            conversations.length === 0 &&
+
+            conversations.length===0 &&
 
 
             <p>
@@ -664,12 +651,9 @@ function Sidebar(){
             conversations.map(conversation=>{
 
 
-                const user =
+                const user=
 
-                    getOtherUser(
-                        conversation
-                    );
-
+                    getOtherUser(conversation);
 
 
 
@@ -680,24 +664,15 @@ function Sidebar(){
                     <div
 
 
-                        className="contact"
+                        className="conversation-item"
 
 
                         key={conversation.id}
 
 
-                        onClick={
-
-                            ()=>openConversation(
-                                conversation.id
-                            )
-
-                        }
-
+                        onClick={()=>openConversation(conversation.id)}
 
                     >
-
-
 
 
 
@@ -707,10 +682,7 @@ function Sidebar(){
 
 
 
-
-
-
-                        <div>
+                        <div className="conversation-info">
 
 
                             <strong>
@@ -729,34 +701,7 @@ function Sidebar(){
 
 
 
-                            <span>
-
-
-                                {
-
-                                isOnline(user)
-
-                                ?
-
-                                " 🟢"
-
-                                :
-
-                                " ⚫"
-
-                                }
-
-
-                            </span>
-
-
-
-
-
-
-
-
-                            <p>
+                            <small>
 
 
                                 {
@@ -767,41 +712,10 @@ function Sidebar(){
 
                                 "Nouvelle discussion"
 
-
                                 }
 
 
-
-
-
-
-                                {
-
-
-                                conversation.unreadCount > 0 &&
-
-
-
-                                <span className="badge">
-
-
-                                    {
-
-                                    conversation.unreadCount
-
-                                    }
-
-
-                                </span>
-
-
-                                }
-
-
-
-                            </p>
-
-
+                            </small>
 
 
 
@@ -811,8 +725,32 @@ function Sidebar(){
 
 
 
-                    </div>
 
+
+
+                        {
+
+
+                        conversation.unreadCount>0
+
+                        &&
+
+
+                        <span className="unread-badge">
+
+
+                            {conversation.unreadCount}
+
+
+                        </span>
+
+
+                        }
+
+
+
+
+                    </div>
 
 
                 );
@@ -825,15 +763,20 @@ function Sidebar(){
 
 
 
+            </div>
 
-        </div>
+
+
+
+
+
+        </aside>
 
 
     );
 
 
 }
-
 
 
 export default Sidebar;

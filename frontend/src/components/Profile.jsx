@@ -1,6 +1,18 @@
 import {
+    useState
+} from "react";
+
+
+import {
     useUsers
 } from "../context/UserContext";
+
+
+import {
+    updateProfile
+} from "../services/user";
+
+
 
 
 
@@ -12,7 +24,7 @@ function Profile(){
 
         user,
 
-        updateAvatar
+        loadCurrentUser
 
 
     } = useUsers();
@@ -21,34 +33,71 @@ function Profile(){
 
 
 
-    async function handleImage(e){
 
+    const [firstname,setFirstname] =
 
-        const file =
-
-            e.target.files[0];
+        useState(user?.firstname || "");
 
 
 
-       if(file){
+    const [lastname,setLastname] =
+
+        useState(user?.lastname || "");
 
 
-    const result =
-
-        await updateAvatar(
-            file
-        );
 
 
-    console.log(
-        "RESULTAT UPLOAD :",
-        result
-    );
 
 
-}
+
+
+
+    async function handleSave(){
+
+
+
+        try{
+
+
+
+            await updateProfile({
+
+                firstname,
+
+                lastname
+
+            });
+
+
+
+
+
+            await loadCurrentUser();
+
+
+
+
+
+            alert(
+                "Profil modifié"
+            );
+
+
+        }
+
+        catch(error){
+
+
+            console.error(error);
+
+
+        }
+
+
 
     }
+
+
 
 
 
@@ -59,51 +108,29 @@ function Profile(){
     return (
 
 
-        <div className="profile">
+
+        <div className="profile-card">
 
 
 
 
 
-            <div className="avatar large">
-
+            <div className="profile-avatar">
 
 
                 {
 
-                    user?.avatar ?
+                user?.firstname
 
+                ?
 
+                user.firstname.charAt(0)
 
-                    <img
+                :
 
-                        src={
-                            `http://localhost:8081${user.avatar}`
-                        }
-
-                        alt="avatar"
-
-                    />
-
-
-
-                    :
-
-
-
-                    <span>
-
-                    {
-                        user?.firstname
-                        ?.charAt(0)
-                    }
-
-                    </span>
-
-
+                "?"
 
                 }
-
 
 
             </div>
@@ -114,17 +141,12 @@ function Profile(){
 
 
 
-            <h3>
 
+            <h2>
 
-                {user?.firstname}
+                Mon profil
 
-                {" "}
-
-                {user?.lastname}
-
-
-            </h3>
+            </h2>
 
 
 
@@ -132,21 +154,89 @@ function Profile(){
 
 
 
-            <input
+            <p className="profile-email">
+
+                {user?.email}
+
+            </p>
 
 
-                type="file"
 
 
-                accept="image/*"
 
 
-                onChange={
-                    handleImage
-                }
 
 
-            />
+
+            <div className="profile-form">
+
+
+
+                <input
+
+                    value={firstname}
+
+                    onChange={
+
+                        e=>
+
+                        setFirstname(
+
+                            e.target.value
+
+                        )
+
+                    }
+
+                    placeholder="Prénom"
+
+                />
+
+
+
+
+
+
+                <input
+
+                    value={lastname}
+
+                    onChange={
+
+                        e=>
+
+                        setLastname(
+
+                            e.target.value
+
+                        )
+
+                    }
+
+                    placeholder="Nom"
+
+                />
+
+
+
+
+
+
+                <button
+
+                    onClick={handleSave}
+
+                >
+
+                    Enregistrer
+
+                </button>
+
+
+
+
+
+            </div>
 
 
 
@@ -160,6 +250,7 @@ function Profile(){
 
 
 }
+
 
 
 export default Profile;

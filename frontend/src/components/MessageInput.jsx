@@ -4,26 +4,43 @@ import {
     useRef
 } from "react";
 
+
 import {
     useConversation
 } from "../context/ConversationContext";
+
 
 import {
     sendMessage,
     sendTyping
 } from "../services/websocket";
 
+
 import {
     uploadFile
 } from "../services/api";
 
+
 import EmojiPicker from "emoji-picker-react";
+
+
+
+
 
 function MessageInput(){
 
+
+
     const {
+
         conversationId
+
     } = useConversation();
+
+
+
+
+
 
     const [content,setContent] = useState("");
 
@@ -35,11 +52,11 @@ function MessageInput(){
 
     const [uploading,setUploading] = useState(false);
 
-    /*
-    ===========================
-    MESSAGE VOCAL
-    ===========================
-    */
+
+
+
+
+
 
     const mediaRecorderRef = useRef(null);
 
@@ -47,15 +64,21 @@ function MessageInput(){
 
     const [recording,setRecording] = useState(false);
 
-    /*
-    ===========================
-    TYPING
-    ===========================
-    */
+
+
+
+
+
+
+
+
 
     function handleChange(value){
 
+
         setContent(value);
+
+
 
         if(conversationId){
 
@@ -63,238 +86,371 @@ function MessageInput(){
 
         }
 
+
     }
 
-    /*
-    ===========================
-    SELECTION FICHIER
-    ===========================
-    */
+
+
+
+
+
+
+
 
     function handleFileChange(e){
 
+
         const selected = e.target.files[0];
 
-        if(!selected){
+
+
+        if(!selected)
 
             return;
 
-        }
+
+
+
 
         setFile(selected);
 
+
+
+
         if(selected.type.startsWith("image")){
 
-            const url = URL.createObjectURL(selected);
+
+            const url =
+
+                URL.createObjectURL(selected);
+
+
 
             setPreview(url);
 
+
         }
+
         else{
+
 
             setPreview(null);
 
+
         }
+
 
     }
 
-    /*
-    ===========================
-    SUPPRIMER FICHIER
-    ===========================
-    */
+
+
+
+
+
+
+
 
     function removeFile(){
 
+
         if(preview){
+
 
             URL.revokeObjectURL(preview);
 
+
         }
+
+
 
         setPreview(null);
 
         setFile(null);
 
+
     }
 
-    /*
-    ===========================
-    EMOJI
-    ===========================
-    */
+
+
+
+
+
+
+
 
     function addEmoji(emoji){
 
+
         setContent(
 
-            previous => previous + emoji.emoji
+            prev =>
+
+            prev + emoji.emoji
 
         );
 
+
     }
 
-    /*
-    ===========================
-    ENREGISTREMENT VOCAL
-    ===========================
-    */
+
+
+
+
+
+
+
 
     async function startRecording(){
 
+
+
         try{
+
+
 
             const stream =
 
-                await navigator.mediaDevices.getUserMedia({
+            await navigator.mediaDevices.getUserMedia({
 
-                    audio:true
+                audio:true
 
-                });
+            });
+
+
+
+
 
             const recorder =
 
-                new MediaRecorder(stream);
+            new MediaRecorder(stream);
+
+
+
 
             mediaRecorderRef.current = recorder;
 
-            chunksRef.current = [];
 
-            recorder.ondataavailable = event=>{
+            chunksRef.current=[];
 
-                chunksRef.current.push(event.data);
+
+
+
+
+            recorder.ondataavailable = e=>{
+
+
+                chunksRef.current.push(e.data);
+
 
             };
+
+
+
+
+
+
+
 
             recorder.onstop = ()=>{
 
+
                 const blob =
 
-                    new Blob(
+                new Blob(
 
-                        chunksRef.current,
+                    chunksRef.current,
 
-                        {
+                    {
 
-                            type:"audio/webm"
+                        type:"audio/webm"
 
-                        }
+                    }
 
-                    );
+                );
+
+
+
+
 
                 const audioFile =
 
-                    new File(
+                new File(
 
-                        [blob],
+                    [blob],
 
-                        "audio.webm",
+                    "audio.webm",
 
-                        {
+                    {
 
-                            type:"audio/webm"
+                        type:"audio/webm"
 
-                        }
+                    }
 
-                    );
+                );
+
+
+
 
                 setFile(audioFile);
 
-                setPreview(null);
 
-                stream.getTracks().forEach(track=>track.stop());
+                stream
+
+                .getTracks()
+
+                .forEach(
+
+                    track=>track.stop()
+
+                );
+
 
             };
 
+
+
+
+
+
+
             recorder.start();
 
+
             setRecording(true);
+
+
 
         }
 
         catch(error){
 
-            console.error(
 
-                "Erreur micro",
+            console.error(error);
 
-                error
-
-            );
 
         }
 
+
     }
+
+
+
+
+
+
+
+
 
     function stopRecording(){
 
+
+
         if(mediaRecorderRef.current){
+
 
             mediaRecorderRef.current.stop();
 
+
             setRecording(false);
 
+
         }
+
 
     }
 
-    /*
-    ===========================
-    ENVOYER
-    ===========================
-    */
+
+
+
+
+
+
+
 
     async function handleSend(){
 
-        if(!conversationId){
+
+
+        if(!conversationId)
 
             return;
 
-        }
 
-        let fileName = null;
 
-        let fileType = null;
 
-        let fileUrl = null;
+
+
+
+        let fileName=null;
+
+        let fileType=null;
+
+        let fileUrl=null;
+
+
+
+
+
+
+
 
         if(file){
 
+
+
             try{
+
 
                 setUploading(true);
 
+
+
                 const response =
 
-                    await uploadFile(file);
+                await uploadFile(file);
 
-                fileName = response.fileName;
 
-                fileType = response.fileType;
 
-                fileUrl = response.fileUrl;
+
+                fileName=response.fileName;
+
+                fileType=response.fileType;
+
+                fileUrl=response.fileUrl;
+
+
 
                 setUploading(false);
+
+
 
             }
 
             catch(error){
 
-                console.error(
 
-                    "UPLOAD ERROR",
+                console.error(error);
 
-                    error
-
-                );
 
                 setUploading(false);
 
+
                 return;
+
 
             }
 
+
+
         }
+
+
+
+
+
+
+
+
 
         if(
 
@@ -304,11 +460,16 @@ function MessageInput(){
 
             !fileUrl
 
-        ){
+        )
 
             return;
 
-        }
+
+
+
+
+
+
 
         sendMessage(
 
@@ -324,202 +485,409 @@ function MessageInput(){
 
         );
 
+
+
+
+
+
+
+
         setContent("");
 
         removeFile();
 
         setShowEmoji(false);
 
+
+
     }
+
+
+
+
+
+
+
+
 
     useEffect(()=>{
 
+
         return ()=>{
+
 
             if(preview){
 
+
                 URL.revokeObjectURL(preview);
 
+
             }
+
 
         };
 
+
     },[preview]);
 
-        return(
 
-        <div className="message-input">
+
+
+
+
+
+
+
+
+
+    return (
+
+
+
+        <div className="message-area">
+
+
+
+
+
+
 
             {
-                showEmoji &&
 
-                <div className="emoji-box">
 
-                    <EmojiPicker
-                        onEmojiClick={addEmoji}
-                    />
+            showEmoji &&
 
-                </div>
+
+
+            <div className="emoji-panel">
+
+
+                <EmojiPicker
+
+                    onEmojiClick={addEmoji}
+
+                />
+
+
+            </div>
+
+
             }
 
+
+
+
+
+
+
+
+
             {
-                preview &&
 
-                <div className="file-preview">
 
-                    <img
-                        src={preview}
-                        className="preview-image"
-                        alt="preview"
-                    />
+            preview &&
 
-                    <button
-                        type="button"
-                        className="remove-file"
-                        onClick={removeFile}
-                    >
-                        ❌
-                    </button>
 
-                </div>
+
+            <div className="upload-preview">
+
+
+
+                <img
+
+                    src={preview}
+
+                    alt="preview"
+
+                />
+
+
+
+
+                <button
+
+                    onClick={removeFile}
+
+                >
+
+                    ✕
+
+
+                </button>
+
+
+
+            </div>
+
+
+
             }
 
+
+
+
+
+
+
+
+
+
             {
-                file &&
-                !preview &&
 
-                <div className="document-preview">
 
-                    {
-                        file.type.startsWith("audio")
-                        ?
-                        "🎤"
-                        :
-                        "📄"
+            file && !preview &&
+
+
+
+            <div className="file-preview-bar">
+
+
+                📎
+
+                <span>
+
+                    {file.name}
+
+                </span>
+
+
+
+                <button
+
+                    onClick={removeFile}
+
+                >
+
+                    ✕
+
+                </button>
+
+
+
+            </div>
+
+
+            }
+
+
+
+
+
+
+
+
+
+            <div className="message-input">
+
+
+
+
+
+
+                <button
+
+                    className="emoji-button"
+
+                    onClick={()=>setShowEmoji(!showEmoji)}
+
+                >
+
+                    😊
+
+                </button>
+
+
+
+
+
+
+
+
+
+                <label className="attach-button">
+
+
+                    📎
+
+
+                    <input
+
+                        type="file"
+
+                        hidden
+
+                        onChange={handleFileChange}
+
+                    />
+
+
+                </label>
+
+
+
+
+
+
+
+
+
+                <input
+
+
+                    value={content}
+
+
+                    placeholder="Écrire un message..."
+
+
+                    onChange={
+
+                        e=>
+
+                        handleChange(e.target.value)
+
                     }
 
-                    <span>
 
-                        {file.name}
 
-                    </span>
+                    onKeyDown={
 
-                    <button
-                        type="button"
-                        onClick={removeFile}
-                    >
-                        ❌
-                    </button>
+                        e=>{
 
-                </div>
-            }
+                            if(e.key==="Enter")
 
-            <button
-                type="button"
-                className="emoji-button"
-                onClick={()=>
-                    setShowEmoji(!showEmoji)
-                }
-            >
-                😊
-            </button>
+                                handleSend();
 
-            <input
-                type="file"
-                className="file-input"
-                onChange={handleFileChange}
-            />
-
-            <button
-                type="button"
-                className={
-                    recording
-                    ?
-                    "record-button recording"
-                    :
-                    "record-button"
-                }
-                onClick={
-                    recording
-                    ?
-                    stopRecording
-                    :
-                    startRecording
-                }
-            >
-                {
-                    recording
-                    ?
-                    "⏹️"
-                    :
-                    "🎤"
-                }
-            </button>
-
-            <input
-
-                value={content}
-
-                placeholder="Écrire un message..."
-
-                onChange={
-
-                    e=>
-
-                    handleChange(
-                        e.target.value
-                    )
-
-                }
-
-                onKeyDown={
-
-                    e=>{
-
-                        if(e.key==="Enter"){
-
-                            handleSend();
 
                         }
 
                     }
 
-                }
 
-            />
+                />
 
-            <button
 
-                type="button"
 
-                className="send-button"
 
-                onClick={handleSend}
 
-                disabled={uploading}
 
-            >
 
-                {
+
+
+                <button
+
+
+                    className={
+
+                    recording
+
+                    ?
+
+                    "record-button active"
+
+                    :
+
+                    "record-button"
+
+                    }
+
+
+
+                    onClick={
+
+                        recording
+
+                        ?
+
+                        stopRecording
+
+                        :
+
+                        startRecording
+
+                    }
+
+
+                >
+
+                    {
+
+                    recording
+
+                    ?
+
+                    "⏹"
+
+                    :
+
+                    "🎤"
+
+                    }
+
+
+                </button>
+
+
+
+
+
+
+
+
+
+                <button
+
+
+                    className="send-button"
+
+
+                    onClick={handleSend}
+
+
+                    disabled={uploading}
+
+
+                >
+
+
+                    {
 
                     uploading
 
                     ?
 
-                    "Téléchargement..."
+                    "..."
 
                     :
 
-                    "Envoyer"
+                    "➤"
 
-                }
 
-            </button>
+                    }
+
+
+                </button>
+
+
+
+
+
+
+
+
+            </div>
+
+
 
         </div>
 
+
+
     );
 
+
+
 }
+
 
 export default MessageInput;

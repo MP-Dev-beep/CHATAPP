@@ -1,9 +1,15 @@
 import Sidebar from "../components/Sidebar";
+
 import ChatHeader from "../components/ChatHeader";
+
 import MessageList from "../components/MessageList";
+
 import MessageInput from "../components/MessageInput";
 
+
 import "../styles/chat.css";
+
+
 
 
 
@@ -16,14 +22,30 @@ function Chat(){
         <div className="chat-container">
 
 
-            <Sidebar />
 
 
 
-            <div className="chat-window">
+            <aside className="chat-sidebar">
+
+
+                <Sidebar />
+
+
+            </aside>
+
+
+
+
+
+
+
+
+            <main className="chat-window">
+
 
 
                 <ChatHeader />
+
 
 
 
@@ -31,11 +53,14 @@ function Chat(){
 
 
 
+
                 <MessageInput />
 
 
 
-            </div>
+            </main>
+
+
 
 
 

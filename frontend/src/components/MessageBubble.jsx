@@ -1,7 +1,5 @@
 import {
-
     useUsers
-
 } from "../context/UserContext";
 
 
@@ -14,11 +12,14 @@ function MessageBubble({
 }){
 
 
+
     const {
 
         user
 
     } = useUsers();
+
+
 
 
 
@@ -38,6 +39,8 @@ function MessageBubble({
 
 
 
+
+
     function formatTime(date){
 
 
@@ -46,21 +49,22 @@ function MessageBubble({
             return "";
 
 
+
         return new Date(date)
 
-        .toLocaleTimeString(
+            .toLocaleTimeString(
 
-            [],
+                [],
 
-            {
+                {
 
-                hour:"2-digit",
+                    hour:"2-digit",
 
-                minute:"2-digit"
+                    minute:"2-digit"
 
-            }
+                }
 
-        );
+            );
 
 
     }
@@ -72,7 +76,9 @@ function MessageBubble({
 
 
 
+
     function renderStatus(){
+
 
 
         if(!isMine)
@@ -83,12 +89,14 @@ function MessageBubble({
 
 
 
+
+
         if(!message.delivered){
 
 
             return (
 
-                <span className="status">
+                <span className="message-status sent">
 
                     ✓
 
@@ -98,6 +106,9 @@ function MessageBubble({
 
 
         }
+
+
+
 
 
 
@@ -117,7 +128,7 @@ function MessageBubble({
 
             return (
 
-                <span className="status">
+                <span className="message-status delivered">
 
                     ✓✓
 
@@ -127,6 +138,8 @@ function MessageBubble({
 
 
         }
+
+
 
 
 
@@ -138,7 +151,7 @@ function MessageBubble({
 
             return (
 
-                <span className="status read">
+                <span className="message-status read">
 
                     ✓✓
 
@@ -149,6 +162,9 @@ function MessageBubble({
 
         }
 
+
+
+        return null;
 
 
     }
@@ -185,31 +201,30 @@ function MessageBubble({
 
 
 
-    return(
+    return (
 
 
-<div
 
-className={
+        <div
 
-isMine
 
-?
+            className={
 
-"message my-message"
+                isMine
 
-:
+                ?
 
-"message other-message"
+                "message-row mine"
 
-}
+                :
 
+                "message-row"
 
->
+            }
 
 
+        >
 
-<div className="bubble">
 
 
 
@@ -217,190 +232,229 @@ isMine
 
 
 
-{
-message.content &&
+            <div className="message-bubble">
 
 
-<p>
 
-{message.content}
 
-</p>
 
 
-}
 
+                {
 
+                message.content &&
 
 
 
+                <p className="message-text">
 
 
+                    {message.content}
 
 
+                </p>
 
 
+                }
 
-{
-message.fileType==="IMAGE"
 
-&&
 
 
-<img
 
-src={fileUrl}
 
-alt={message.fileName}
 
-className="message-image"
 
-/>
 
-}
+                {
 
 
+                message.fileType==="IMAGE"
 
+                &&
 
 
+                <img
 
+                    src={fileUrl}
 
+                    alt={message.fileName}
 
+                    className="chat-image"
 
-{
-message.fileType==="VIDEO"
+                />
 
-&&
 
+                }
 
-<video
 
-controls
 
-className="message-video"
 
->
 
 
-<source
 
-src={fileUrl}
 
-/>
 
+                {
 
-</video>
 
+                message.fileType==="VIDEO"
 
-}
+                &&
 
 
+                <video
 
+                    controls
 
+                    className="chat-video"
 
+                >
 
+                    <source
 
+                        src={fileUrl}
 
+                    />
 
-{
-message.fileType==="AUDIO"
+                </video>
 
-&&
 
+                }
 
-<audio
 
-controls
 
->
 
 
-<source
 
-src={fileUrl}
 
-/>
 
 
-</audio>
+                {
 
 
-}
+                message.fileType==="AUDIO"
 
+                &&
 
 
+                <audio
 
+                    controls
 
+                    className="chat-audio"
 
+                >
 
+                    <source
 
+                        src={fileUrl}
 
-{
-message.fileType==="DOCUMENT"
+                    />
 
-&&
 
+                </audio>
 
-<a
 
-href={fileUrl}
+                }
 
-target="_blank"
 
-rel="noreferrer"
 
->
 
-📄 {message.fileName}
 
 
-</a>
 
 
-}
 
+                {
 
 
+                (
 
+                    message.fileType==="DOCUMENT"
 
+                    ||
 
+                    message.fileType==="PDF"
 
+                )
 
+                &&
 
-<div className="message-info">
 
+                <a
 
-<span>
+                    href={fileUrl}
 
-{formatTime(message.sentAt)}
+                    target="_blank"
 
-</span>
+                    rel="noreferrer"
 
+                    className="chat-document"
 
+                >
 
-{
-renderStatus()
+                    📄
 
-}
+                    <span>
 
+                        {message.fileName}
 
-</div>
+                    </span>
 
 
+                </a>
 
 
+                }
 
 
-</div>
 
 
 
 
 
-</div>
 
 
-);
+                <div className="message-footer">
+
+
+                    <span>
+
+                        {formatTime(message.sentAt)}
+
+                    </span>
+
+
+
+
+                    {
+
+                        renderStatus()
+
+                    }
+
+
+                </div>
+
+
+
+
+
+
+
+
+            </div>
+
+
+
+
+
+
+
+        </div>
+
+
+    );
 
 
 

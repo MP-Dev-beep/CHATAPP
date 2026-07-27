@@ -19,7 +19,6 @@ import {
 function Profile(){
 
 
-
     const {
         user,
         loadCurrentUser
@@ -29,26 +28,14 @@ function Profile(){
 
 
 
-    const [
-        firstname,
-        setFirstname
-    ] = useState(
+    const [firstname,setFirstname] = useState(
         user?.firstname || ""
     );
 
 
-
-
-
-    const [
-        lastname,
-        setLastname
-    ] = useState(
+    const [lastname,setLastname] = useState(
         user?.lastname || ""
     );
-
-
-
 
 
 
@@ -57,9 +44,7 @@ function Profile(){
     async function handleSave(){
 
 
-
         try{
-
 
 
             await updateProfile({
@@ -72,10 +57,7 @@ function Profile(){
 
 
 
-
-
             await loadCurrentUser();
-
 
 
 
@@ -88,9 +70,7 @@ function Profile(){
         catch(error){
 
 
-            console.error(
-                error
-            );
+            console.error(error);
 
 
         }
@@ -102,12 +82,33 @@ function Profile(){
 
 
 
-
-
     return (
 
+        <div className="profile-card">
 
-        <div className="profile">
+
+            <div className="profile-avatar">
+
+
+                {
+
+                user?.firstname
+
+                ?
+
+                user.firstname.charAt(0).toUpperCase()
+
+                :
+
+                "?"
+
+                }
+
+
+            </div>
+
+
+
 
 
             <h2>
@@ -119,25 +120,34 @@ function Profile(){
 
 
 
-            <input
 
+            <div className="profile-name">
+
+
+                {user?.firstname}
+
+                {" "}
+
+                {user?.lastname}
+
+
+            </div>
+
+
+
+
+
+
+
+            <input
 
                 value={firstname}
 
-
                 onChange={
-
-                    e=>
-
-                    setFirstname(
-                        e.target.value
-                    )
-
+                    e=>setFirstname(e.target.value)
                 }
 
-
                 placeholder="Prénom"
-
 
             />
 
@@ -146,25 +156,16 @@ function Profile(){
 
 
 
-            <input
 
+            <input
 
                 value={lastname}
 
-
                 onChange={
-
-                    e=>
-
-                    setLastname(
-                        e.target.value
-                    )
-
+                    e=>setLastname(e.target.value)
                 }
 
-
                 placeholder="Nom"
-
 
             />
 
@@ -192,9 +193,7 @@ function Profile(){
     );
 
 
-
 }
-
 
 
 export default Profile;
