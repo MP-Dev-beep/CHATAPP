@@ -1,717 +1,240 @@
+import { useState, useRef, useEffect } from "react";
 import {
     useUsers
 } from "../context/UserContext";
-
 
 import {
     useConversation
 } from "../context/ConversationContext";
 
-
-
-
-
+import {
+    deleteMessage
+} from "../services/message";
 
 function MessageBubble({
-
-    message
-
+    message,
+    onDelete
 }){
-
 
     const {
         user
     } = useUsers();
 
-
-
-
     const {
         setReplyMessage
     } = useConversation();
 
+    const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef(null);
 
-
-
-
-
+    // Sécurité fatale : si le message n'existe pas, on ne rend rien du tout
+    if (!message) return null;
 
     const isMine =
-
         Number(message.senderId)
-
         ===
-
         Number(user?.id);
 
-
-
-
-
-
-
-
+    // Fermer le menu si on clique en dehors
+    useEffect(() => {
+        function handleClickOutside(event) {
+            try {
+                if (menuRef.current && !menuRef.current.contains(event.target)) {
+                    setShowMenu(false);
+                }
+            } catch (e) {
+                // Ignore
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     function formatTime(date){
-
-
-        if(!date)
-
+        try {
+            if(!date) return "";
+            return new Date(date).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+        } catch (e) {
             return "";
-
-
-
-        return new Date(date)
-
-            .toLocaleTimeString(
-
-                [],
-
-                {
-                    hour:"2-digit",
-                    minute:"2-digit"
-                }
-
-            );
-
-
+        }
     }
-
-
-
-
-
-
-
-
 
     function handleReply(){
-
-
-        setReplyMessage({
-
-            id:message.id,
-
-
-            content:
-
-            message.content
-
-            ||
-
-            message.fileName
-
-            ||
-
-            "Fichier"
-
-        });
-
-
+        try {
+            setReplyMessage({
+                id: message.id,
+                content: message.content || message.fileName || "Fichier"
+            });
+            setShowMenu(false);
+        } catch (e) {
+            console.error(e);
+        }
     }
 
+    async function handleDelete(deleteForEveryone) {
+        const confirmMsg = deleteForEveryone 
+            ? "Voulez-vous supprimer ce message pour tout le monde ?" 
+            : "Voulez-vous supprimer ce message pour vous ?";
 
-
-
-
-
-
-
-
-    // Aller au message original de la réponse
+        if (window.confirm(confirmMsg)) {
+            try {
+                // On passe le paramètre deleteForEveryone au service
+                await deleteMessage(message.id, deleteForEveryone);
+                
+                if (typeof onDelete === "function") {
+                    onDelete(message.id, deleteForEveryone);
+                }
+            } catch (error) {
+                console.error("Erreur lors de la suppression du message", error);
+                alert(error.response?.data?.message || "Impossible de supprimer le message");
+            }
+        }
+        setShowMenu(false);
+    }
 
     function goToReplyMessage(){
-
-
-        if(!message.replyToId)
-
-            return;
-
-
-
-        const element = document.getElementById(
-
-            `message-${message.replyToId}`
-
-        );
-
-
-
-
-        if(element){
-
-
-            element.scrollIntoView({
-
-                behavior:"smooth",
-
-                block:"center"
-
-            });
-
-
-
-
-
-            element.classList.add(
-
-                "highlight-message"
-
-            );
-
-
-
-
-
-            setTimeout(()=>{
-
-
-                element.classList.remove(
-
-                    "highlight-message"
-
-                );
-
-
-            },1500);
-
-
-
+        try {
+            if(!message.replyToId) return;
+            const element = document.getElementById(`message-${message.replyToId}`);
+            if(element){
+                element.scrollIntoView({ behavior:"smooth", block:"center" });
+                element.classList.add("highlight-message");
+                setTimeout(()=>{
+                    element.classList.remove("highlight-message");
+                },1500);
+            }
+        } catch (e) {
+            console.error(e);
         }
-
-
     }
-
-
-
-
-
-
-
-
 
     function renderStatus(){
-
-
-        if(!isMine)
-
+        try {
+            if(!isMine) return null;
+            if(!message.delivered) return <span className="message-status sent">✓</span>;
+            if(message.delivered && !message.read) return <span className="message-status delivered">✓✓</span>;
+            if(message.read) return <span className="message-status read">✓✓</span>;
             return null;
-
-
-
-
-        if(!message.delivered){
-
-
-            return (
-
-                <span className="message-status sent">
-
-                    ✓
-
-                </span>
-
-            );
-
-
+        } catch (e) {
+            return null;
         }
-
-
-
-
-
-
-
-        if(message.delivered && !message.read){
-
-
-            return (
-
-                <span className="message-status delivered">
-
-                    ✓✓
-
-                </span>
-
-            );
-
-
-        }
-
-
-
-
-
-
-
-        if(message.read){
-
-
-            return (
-
-                <span className="message-status read">
-
-                    ✓✓
-
-                </span>
-
-            );
-
-
-        }
-
-
-
-        return null;
-
-
     }
 
-
-
-
-
-
-
-
-
-    const fileUrl =
-
-
-        message.fileUrl
-
-        ?
-
-
-        "http://localhost:8081"
-
-        +
-
-        message.fileUrl
-
-
-        :
-
-        null;
-
-
-
-
-
-
-
-
-
-
-
-
+    const fileUrl = message.fileUrl ? "http://localhost:8081" + message.fileUrl : null;
+    const isDeleted = message.content === "Ce message a été supprimé";
 
     return (
-
-
-
         <div
-
-
-            className={
-
-                isMine
-
-                ?
-
-                "message-row mine"
-
-                :
-
-                "message-row"
-
-            }
-
-
+            id={`message-${message.id}`}
+            className={isMine ? "message-row mine" : "message-row"}
         >
-
-
-
-
-
-
-
-            <div className="message-bubble">
-
-
-
-
-
-
-
-
-                <button
-
-                    className="reply-button"
-
-                    onClick={handleReply}
-
-                    title="Répondre"
-
-                >
-
-                    ↩️
-
-                </button>
-
-
-
-
-
-
-
-
-
-
-
-
-                {
-
-
-                message.replyToId &&
-
-
-                <div
-
-
-                    className="reply-preview"
-
-
-                    onClick={goToReplyMessage}
-
-
-                    style={{
-
-                        cursor:"pointer"
-
-                    }}
-
-
-                >
-
-
-
-                    <span>
-
-                        ↩ Réponse à :
-
-                    </span>
-
-
-
-
-
-                    <p>
-
-
-                        {
-
-                        message.replyMessage?.content
-
-                        ||
-
-                        message.replyContent
-
-                        ||
-
-                        "Message supprimé"
-
-
-                        }
-
-
+            <div className="message-bubble" style={{ position: 'relative' }}>
+
+                {/* Bouton des trois points verticaux (⋮) en haut à droite (masqué si le message est déjà supprimé) */}
+                {!isDeleted && (
+                    <div className="message-menu-container" ref={menuRef} style={{ position: 'absolute', top: '5px', right: '8px', zIndex: 5 }}>
+                        <button 
+                            className="menu-trigger-btn"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowMenu(prev => !prev);
+                            }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', color: '#666' }}
+                            title="Options"
+                        >
+                            ⋮
+                        </button>
+
+                        {showMenu && (
+                            <div className="message-dropdown-menu" style={{
+                                position: 'absolute',
+                                right: '0',
+                                top: '20px',
+                                background: 'white',
+                                border: '1px solid #ddd',
+                                borderRadius: '6px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                zIndex: 10,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                minWidth: '160px'
+                            }}>
+                                <button onClick={handleReply} style={{ padding: '8px 12px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '13px' }}>
+                                    ↩️ Répondre
+                                </button>
+
+                                {/* Si c'est mon message ET qu'il n'a pas encore été lu : on peut supprimer pour tout le monde */}
+                                {isMine && !message.read && (
+                                    <button onClick={() => handleDelete(true)} style={{ padding: '8px 12px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '13px', color: 'red' }}>
+                                        🗑️ Suppr. pour tous
+                                    </button>
+                                )}
+
+                                {/* Option de suppression pour soi (disponible pour tous les messages) */}
+                                <button onClick={() => handleDelete(false)} style={{ padding: '8px 12px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '13px', color: 'orange' }}>
+                                    🗑️ Supprimer pour moi
+                                </button>
+
+                                {isMine && (
+                                    <button onClick={() => { alert("Modification bientôt dispo !"); setShowMenu(false); }} style={{ padding: '8px 12px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '13px' }}>
+                                        ✏️ Modifier
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {message.replyToId && !isDeleted && (
+                    <div
+                        className="reply-preview"
+                        onClick={goToReplyMessage}
+                        style={{ cursor:"pointer", marginTop: '15px' }}
+                    >
+                        <span>↩ Réponse à :</span>
+                        <p>
+                            {
+                                message.replyMessage?.content
+                                || message.replyContent
+                                || "Message supprimé"
+                            }
+                        </p>
+                    </div>
+                )}
+
+                {isDeleted ? (
+                    <p className="message-text" style={{ fontStyle: 'italic', color: '#888', marginTop: message.replyToId ? '5px' : '10px' }}>
+                        🚫 Ce message a été supprimé
                     </p>
-
-
-
-                </div>
-
-
-
-                }
-
-
-
-
-
-
-
-
-
-
-
-
-                {
-
-
-                message.content &&
-
-
-                <p
-
-                    className="message-text"
-
-                >
-
-
-                    {message.content}
-
-
-                </p>
-
-
-                }
-
-
-
-
-
-
-
-
-
-
-
-
-                {
-
-
-                message.fileType === "IMAGE" &&
-
-
-                <img
-
-
-                    src={fileUrl}
-
-
-                    alt={message.fileName || ""}
-
-
-                    className="chat-image"
-
-
-                />
-
-
-                }
-
-
-
-
-
-
-
-
-
-
-
-
-                {
-
-
-                message.fileType === "VIDEO" &&
-
-
-                <video
-
-
-                    controls
-
-
-                    className="chat-video"
-
-
-                >
-
-
-                    <source
-
-                        src={fileUrl}
-
-                    />
-
-
-                </video>
-
-
-                }
-
-
-
-
-
-
-
-
-
-
-
-
-                {
-
-
-                message.fileType === "AUDIO" &&
-
-
-                <audio
-
-
-                    controls
-
-
-                    className="chat-audio"
-
-
-                >
-
-
-                    <source
-
-                        src={fileUrl}
-
-                    />
-
-
-                </audio>
-
-
-                }
-
-
-
-
-
-
-
-
-
-
-
-
-                {
-
-
-                (
-
-                    message.fileType === "DOCUMENT"
-
-                    ||
-
-                    message.fileType === "PDF"
-
-                )
-
-
-                &&
-
-
-                <a
-
-
-                    href={fileUrl}
-
-
-                    target="_blank"
-
-
-                    rel="noreferrer"
-
-
-                    className="chat-document"
-
-
-                >
-
-
-                    📄
-
-
-                    <span>
-
-
-                        {message.fileName}
-
-
-                    </span>
-
-
-
-                </a>
-
-
-                }
-
-
-
-
-
-
-
-
-
-
-
+                ) : (
+                    <>
+                        {message.content && (
+                            <p className="message-text" style={{ marginTop: message.replyToId ? '5px' : '15px', paddingRight: '15px' }}>
+                                {message.content}
+                            </p>
+                        )}
+
+                        {message.fileType === "IMAGE" && <img src={fileUrl} alt={message.fileName || ""} className="chat-image" />}
+                        {message.fileType === "VIDEO" && <video controls className="chat-video"><source src={fileUrl} /></video>}
+                        {message.fileType === "AUDIO" && <audio controls className="chat-audio"><source src={fileUrl} /></audio>}
+                        {(message.fileType === "DOCUMENT" || message.fileType === "PDF") && (
+                            <a href={fileUrl} target="_blank" rel="noreferrer" className="chat-document">
+                                📄 <span>{message.fileName}</span>
+                            </a>
+                        )}
+                    </>
+                )}
 
                 <div className="message-footer">
-
-
-
-                    <span>
-
-
-                        {formatTime(message.sentAt)}
-
-
-                    </span>
-
-
-
-
-
-                    {
-
-
-                        renderStatus()
-
-
-                    }
-
-
-
+                    <span>{formatTime(message.sentAt)}</span>
+                    {renderStatus()}
                 </div>
 
-
-
-
-
-
-
-
-
             </div>
-
-
-
-
-
-
-
-
         </div>
-
-
-
     );
-
-
 }
-
-
 
 export default MessageBubble;
