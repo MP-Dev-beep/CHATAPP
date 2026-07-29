@@ -205,6 +205,20 @@ public class ConversationService {
 
 
 
+    /*
+    =================================================
+        ARCHIVER / DESARCHIVER UNE CONVERSATION
+    =================================================
+    */
+    public ConversationResponse toggleArchiveConversation(Long conversationId, String email) {
+        Conversation conversation = getConversationForUser(conversationId, email);
+        conversation.setArchived(!conversation.isArchived());
+        Conversation saved = conversationRepository.save(conversation);
+        return convertToResponse(saved);
+    }
+
+
+
 
 
 

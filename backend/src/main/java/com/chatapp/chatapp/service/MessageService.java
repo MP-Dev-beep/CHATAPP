@@ -48,11 +48,6 @@ public class MessageService {
                         email
                 );
 
-        /*
-        ==========================================
-        MESSAGE AUQUEL ON REPOND
-        ==========================================
-        */
         Message repliedMessage = null;
 
         if(request.getReplyToId() != null){
@@ -79,11 +74,6 @@ public class MessageService {
                 .content(
                         request.getContent()
                 )
-                /*
-                ==========================
-                FICHIER
-                ==========================
-                */
                 .fileName(
                         request.getFileName()
                 )
@@ -95,11 +85,6 @@ public class MessageService {
                 )
                 .sender(sender)
                 .conversation(conversation)
-                /*
-                ==========================
-                REPONSE MESSAGE
-                ==========================
-                */
                 .replyMessage(
                         repliedMessage
                 )
@@ -110,12 +95,6 @@ public class MessageService {
                 .read(false)
                 .build();
 
-        /*
-        ==========================================
-        DESTINATAIRE ONLINE
-        MESSAGE LIVRE AUTOMATIQUEMENT
-        ==========================================
-        */
         if(
                 presenceService.isOnline(
                         receiver.getEmail()
@@ -135,6 +114,31 @@ public class MessageService {
 
     /*
     ==================================================
+        MODIFIER UN MESSAGE
+    ==================================================
+    */
+    public MessageResponse editMessage(String email, Long messageId, String newContent) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message introuvable"));
+
+        if (!message.getSender().getEmail().equals(email)) {
+            throw new RuntimeException("Action non autorisée : tu n'es pas l'auteur de ce message");
+        }
+
+        if (message.isDeleted()) {
+            throw new RuntimeException("Impossible de modifier un message supprimé");
+        }
+
+        message.setContent(newContent);
+        message.setEdited(true);
+        message.setEditedAt(LocalDateTime.now());
+
+        Message saved = messageRepository.save(message);
+        return convert(saved);
+    }
+
+    /*
+    ==================================================
         SUPPRIMER UN MESSAGE (FAÇON TELEGRAM)
     ==================================================
     */
@@ -142,19 +146,17 @@ public class MessageService {
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new RuntimeException("Message introuvable"));
 
-        // Vérifier que l'utilisateur connecté est bien l'auteur du message
         if (!message.getSender().getEmail().equals(email)) {
             throw new RuntimeException("Action non autorisée : tu n'es pas l'auteur de ce message");
         }
 
         if (deleteForEveryone) {
-            // Empêcher de supprimer pour tout le monde si le message a déjà été lu
             if (message.isRead()) {
                 throw new RuntimeException("Impossible de supprimer pour tout le monde : le message a déjà été lu.");
             }
             
-            // Soft delete : On modifie le contenu
             message.setContent("Ce message a été supprimé");
+            message.setDeleted(true);
             message.setFileName(null);
             message.setFileType(null);
             message.setFileUrl(null);
@@ -163,10 +165,22 @@ public class MessageService {
             
             return convert(saved);
         } else {
-            // Supprimer uniquement pour soi (suppression définitive de la base)
             messageRepository.delete(message);
             return null;
         }
+    }
+
+    /*
+    ==================================================
+        RECHERCHE DANS LES MESSAGES
+    ==================================================
+    */
+    public List<MessageResponse> searchMessages(String email, Long conversationId, String query) {
+        conversationService.getConversationForUser(conversationId, email);
+        return messageRepository.findByConversationIdAndContentContainingIgnoreCase(conversationId, query)
+                .stream()
+                .map(this::convert)
+                .toList();
     }
 
     /*
@@ -399,9 +413,6 @@ public class MessageService {
                 message.getSentAt()
         );
 
-        /*
-        FICHIER
-        */
         response.setFileName(
                 message.getFileName()
         );
@@ -414,11 +425,6 @@ public class MessageService {
                 message.getFileUrl()
         );
 
-        /*
-        ====================================
-        REPONSE MESSAGE
-        ====================================
-        */
         if(message.getReplyMessage()!=null){
             response.setReplyToId(
                     message.getReplyMessage().getId()
@@ -429,9 +435,6 @@ public class MessageService {
             );
         }
 
-        /*
-        STATUT
-        */
         response.setDelivered(
                 message.isDelivered()
         );
@@ -447,6 +450,10 @@ public class MessageService {
         response.setReadAt(
                 message.getReadAt()
         );
+
+        response.setDeleted(message.isDeleted());
+        response.setEdited(message.isEdited());
+        response.setEditedAt(message.getEditedAt()); // Transmet la date de modification au front-end
 
         return response;
     }

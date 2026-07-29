@@ -8,12 +8,14 @@ import {
 } from "../context/ConversationContext";
 
 import {
-    deleteMessage
+    deleteMessage,
+    updateMessage
 } from "../services/message";
 
 function MessageBubble({
     message,
-    onDelete
+    onDelete,
+    onUpdate
 }){
 
     const {
@@ -21,10 +23,13 @@ function MessageBubble({
     } = useUsers();
 
     const {
-        setReplyMessage
+        setReplyMessage,
+        setMessages
     } = useConversation();
 
     const [showMenu, setShowMenu] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(message?.content || "");
     const menuRef = useRef(null);
 
     // Sécurité fatale : si le message n'existe pas, on ne rend rien du tout
@@ -80,7 +85,6 @@ function MessageBubble({
 
         if (window.confirm(confirmMsg)) {
             try {
-                // On passe le paramètre deleteForEveryone au service
                 await deleteMessage(message.id, deleteForEveryone);
                 
                 if (typeof onDelete === "function") {
@@ -92,6 +96,31 @@ function MessageBubble({
             }
         }
         setShowMenu(false);
+    }
+
+    async function handleSaveEdit(e) {
+        e.preventDefault();
+        if (!editContent.trim()) return;
+        try {
+            // 1. Appel de l'API de modification
+            const updated = await updateMessage(message.id, editContent);
+            setIsEditing(false);
+
+            // 2. Mise à jour instantanée dans le state global du contexte
+            setMessages(prevMessages =>
+                prevMessages.map(msg =>
+                    msg.id === updated.id ? updated : msg
+                )
+            );
+
+            // 3. Appel de la prop onUpdate si elle est fournie par le parent
+            if (typeof onUpdate === "function") {
+                onUpdate(updated);
+            }
+        } catch (error) {
+            console.error("Erreur modification message", error);
+            alert("Impossible de modifier le message");
+        }
     }
 
     function goToReplyMessage(){
@@ -133,7 +162,7 @@ function MessageBubble({
             <div className="message-bubble" style={{ position: 'relative' }}>
 
                 {/* Bouton des trois points verticaux (⋮) en haut à droite (masqué si le message est déjà supprimé) */}
-                {!isDeleted && (
+                {!isDeleted && !isEditing && (
                     <div className="message-menu-container" ref={menuRef} style={{ position: 'absolute', top: '5px', right: '8px', zIndex: 5 }}>
                         <button 
                             className="menu-trigger-btn"
@@ -177,8 +206,8 @@ function MessageBubble({
                                     🗑️ Supprimer pour moi
                                 </button>
 
-                                {isMine && (
-                                    <button onClick={() => { alert("Modification bientôt dispo !"); setShowMenu(false); }} style={{ padding: '8px 12px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '13px' }}>
+                                {isMine && message.content && (
+                                    <button onClick={() => { setIsEditing(true); setShowMenu(false); }} style={{ padding: '8px 12px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '13px' }}>
                                         ✏️ Modifier
                                     </button>
                                 )}
@@ -208,11 +237,30 @@ function MessageBubble({
                     <p className="message-text" style={{ fontStyle: 'italic', color: '#888', marginTop: message.replyToId ? '5px' : '10px' }}>
                         🚫 Ce message a été supprimé
                     </p>
+                ) : isEditing ? (
+                    <form onSubmit={handleSaveEdit} style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <input
+                            type="text"
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
+                            autoFocus
+                        />
+                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
+                            <button type="button" onClick={() => setIsEditing(false)} style={{ fontSize: '11px', padding: '2px 6px' }}>Annuler</button>
+                            <button type="submit" style={{ fontSize: '11px', padding: '2px 6px', background: '#007bff', color: 'white', border: 'none', borderRadius: '3px' }}>Enregistrer</button>
+                        </div>
+                    </form>
                 ) : (
                     <>
                         {message.content && (
                             <p className="message-text" style={{ marginTop: message.replyToId ? '5px' : '15px', paddingRight: '15px' }}>
                                 {message.content}
+                                {(message.isEdited || message.edited) && (
+                                    <span style={{ fontSize: '10px', fontStyle: 'italic', color: '#888', marginLeft: '5px' }}>
+                                        (modifié)
+                                    </span>
+                                )}
                             </p>
                         )}
 

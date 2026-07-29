@@ -1,1130 +1,327 @@
 import SockJS from "sockjs-client";
-
-import {
-    Client
-} from "@stomp/stompjs";
-
-
-
-
+import { Client } from "@stomp/stompjs";
 
 let stompClient = null;
-
 let presenceClient = null;
-
 let presenceSubscription = null;
-
 let subscriptions = [];
-
 let connected = false;
-
 let pendingDelivered = [];
-
 let pendingRead = [];
-
-
-
-
-
-
-
-
 
 /*
 ================================================
 CHAT WEBSOCKET
 ================================================
 */
-
-
 export function connectWebSocket(
-
     conversationId,
-
     currentUserId,
-
     onMessageReceived,
-
     onStatusReceived,
-
     onTypingReceived
+) {
+    const token = localStorage.getItem("token");
 
-){
-
-
-    const token =
-        localStorage.getItem("token");
-
-
-
-
-    if(!token){
-
-        console.log(
-            "PAS TOKEN CHAT"
-        );
-
+    if (!token) {
+        console.log("PAS TOKEN CHAT");
         return;
-
     }
 
-
-
-
-
-
-    if(stompClient){
-
+    if (stompClient) {
         disconnectWebSocket();
-
     }
-
-
-
-
-
-
-
 
     stompClient = new Client({
-
-
-
-        webSocketFactory:()=>{
-
-
-            return new SockJS(
-
-                "http://localhost:8081/ws"
-
-            );
-
-
+        webSocketFactory: () => {
+            return new SockJS("http://localhost:8081/ws");
         },
 
-
-
-
-        connectHeaders:{
-
-
-            Authorization:
-
-            `Bearer ${token}`
-
-
+        connectHeaders: {
+            Authorization: `Bearer ${token}`
         },
 
+        reconnectDelay: 5000,
 
-
-
-        reconnectDelay:5000,
-
-
-
-
-        debug:(msg)=>{
-
-
-            console.log(
-
-                "CHAT",
-
-                msg
-
-            );
-
-
+        debug: (msg) => {
+            console.log("CHAT", msg);
         },
 
+        onConnect: () => {
+            console.log("CHAT WEBSOCKET CONNECTE");
+            connected = true;
 
-
-
-
-
-
-        onConnect:()=>{
-
-
-
-            console.log(
-                "CHAT WEBSOCKET CONNECTE"
-            );
-
-
-
-            connected=true;
-
-
-
-
-
-            const messageSubscription =
-
-
-            stompClient.subscribe(
-
-
-
+            const messageSubscription = stompClient.subscribe(
                 `/topic/conversation/${conversationId}`,
-
-
-
-                frame=>{
-
-
-
-                    try{
-
-
-                        const data = JSON.parse(
-
-                            frame.body
-
-                        );
-
-
+                frame => {
+                    try {
+                        const data = JSON.parse(frame.body);
                         onMessageReceived(data);
-
-
-
+                    } catch (error) {
+                        console.error("ERREUR MESSAGE", error);
                     }
-
-                    catch(error){
-
-
-                        console.error(
-
-                            "ERREUR MESSAGE",
-
-                            error
-
-                        );
-
-
-                    }
-
-
                 }
-
-
-
             );
 
-
-
-
-
-
-
-
-
-            const statusSubscription =
-
-
-            stompClient.subscribe(
-
-
-
+            const statusSubscription = stompClient.subscribe(
                 `/topic/message-status/${currentUserId}`,
-
-
-
-                frame=>{
-
-
-                    try{
-
-
-                        const data = JSON.parse(
-
-                            frame.body
-
-                        );
-
-
+                frame => {
+                    try {
+                        const data = JSON.parse(frame.body);
                         onStatusReceived(data);
-
-
+                    } catch (error) {
+                        console.error("ERREUR STATUS", error);
                     }
-
-                    catch(error){
-
-
-                        console.error(
-
-                            "ERREUR STATUS",
-
-                            error
-
-                        );
-
-
-                    }
-
-
                 }
-
-
-
             );
 
-
-
-
-
-
-
-
-
-            const typingSubscription =
-
-
-            stompClient.subscribe(
-
-
-
+            const typingSubscription = stompClient.subscribe(
                 `/topic/typing/${conversationId}`,
-
-
-
-                frame=>{
-
-
-
-                    try{
-
-
-
+                frame => {
+                    try {
                         let data;
-
-
-
-                        try{
-
-
-                            data = JSON.parse(
-
-                                frame.body
-
-                            );
-
-
-                        }
-
-                        catch{
-
-
+                        try {
+                            data = JSON.parse(frame.body);
+                        } catch {
                             data = frame.body;
-
-
                         }
 
-
-
-
-
-
-                        if(
-
-                            typeof data === "object"
-
-                        ){
-
-
+                        if (typeof data === "object") {
                             onTypingReceived(
-
-                                data.username
-
-                                ||
-
-                                data.name
-
-                                ||
-
-                                ""
-
+                                data.username || data.name || ""
                             );
-
-
+                        } else {
+                            onTypingReceived(data);
                         }
-
-                        else{
-
-
-                            onTypingReceived(
-
-                                data
-
-                            );
-
-
-                        }
-
-
-
-
-
+                    } catch (error) {
+                        console.error("ERREUR TYPING", error);
                     }
-
-                    catch(error){
-
-
-
-                        console.error(
-
-                            "ERREUR TYPING",
-
-                            error
-
-                        );
-
-
-                    }
-
-
-
                 }
-
-
-
             );
-
-
-
-
-
-
-
-
 
             subscriptions.push(
-
-
                 messageSubscription,
-
-
                 statusSubscription,
-
-
                 typingSubscription
-
-
             );
 
-
-
-
-
-
-
-
-
-            pendingDelivered.forEach(id=>{
-
-
+            pendingDelivered.forEach(id => {
                 sendDeliveredNow(id);
-
-
             });
+            pendingDelivered = [];
 
-
-            pendingDelivered=[];
-
-
-
-
-
-
-
-
-
-            pendingRead.forEach(id=>{
-
-
+            pendingRead.forEach(id => {
                 sendReadNow(id);
-
-
             });
-
-
-            pendingRead=[];
-
-
-
+            pendingRead = [];
         },
 
-
-
-
-
-
-
-
-
-        onDisconnect:()=>{
-
-
-            connected=false;
-
-
-            console.log(
-
-                "CHAT DECONNECTE"
-
-            );
-
-
+        onDisconnect: () => {
+            connected = false;
+            console.log("CHAT DECONNECTE");
         }
-
-
-
-
-
     });
 
-
-
-
-
-
-
     stompClient.activate();
-
-
-
 }
-
-
-
-
-
-
-
-
 
 /*
 ================================================
 PRESENCE WEBSOCKET
 ================================================
 */
+export function connectPresence(onStatus) {
+    const token = localStorage.getItem("token");
 
-
-export function connectPresence(onStatus){
-
-
-
-    const token =
-
-        localStorage.getItem("token");
-
-
-
-
-
-    if(!token){
-
-        console.log(
-            "PAS TOKEN PRESENCE"
-        );
-
+    if (!token) {
+        console.log("PAS TOKEN PRESENCE");
         return;
-
     }
 
-
-
-
-
-
-
-    if(presenceClient){
-
+    if (presenceClient) {
         return;
-
     }
-
-
-
-
-
-
 
     presenceClient = new Client({
-
-
-
-        webSocketFactory:()=>{
-
-
-            return new SockJS(
-
-                "http://localhost:8081/ws"
-
-            );
-
-
+        webSocketFactory: () => {
+            return new SockJS("http://localhost:8081/ws");
         },
 
-
-
-        connectHeaders:{
-
-
-            Authorization:
-
-            `Bearer ${token}`
-
-
+        connectHeaders: {
+            Authorization: `Bearer ${token}`
         },
 
+        reconnectDelay: 5000,
 
+        onConnect: () => {
+            console.log("PRESENCE CONNECTEE");
 
-        reconnectDelay:5000,
-
-
-
-        onConnect:()=>{
-
-
-
-            console.log(
-
-                "PRESENCE CONNECTEE"
-
-            );
-
-
-
-
-
-
-            presenceSubscription =
-
-
-            presenceClient.subscribe(
-
-
-
+            presenceSubscription = presenceClient.subscribe(
                 "/topic/users-status",
-
-
-
-
-                frame=>{
-
-
-                    try{
-
-
-                        const data = JSON.parse(
-
-                            frame.body
-
-                        );
-
-
+                frame => {
+                    try {
+                        const data = JSON.parse(frame.body);
                         onStatus(data);
-
-
+                    } catch (error) {
+                        console.error("ERREUR PRESENCE", error);
                     }
-
-                    catch(error){
-
-
-                        console.error(
-
-                            "ERREUR PRESENCE",
-
-                            error
-
-                        );
-
-
-                    }
-
-
                 }
-
-
-
             );
-
-
-
         }
-
-
-
     });
 
-
-
-
-
-
     presenceClient.activate();
-
-
-
 }
 
-
-
-
-
-
-
-
-
-export function disconnectPresence(){
-
-
-
-    if(presenceSubscription){
-
-
+export function disconnectPresence() {
+    if (presenceSubscription) {
         presenceSubscription.unsubscribe();
-
-
-        presenceSubscription=null;
-
-
+        presenceSubscription = null;
     }
 
-
-
-
-
-
-    if(presenceClient){
-
-
+    if (presenceClient) {
         presenceClient.deactivate();
-
-
-        presenceClient=null;
-
-
+        presenceClient = null;
     }
-
-
-
 }
-
-
-
-
-
-
-
-
 
 /*
 ================================================
 ENVOYER MESSAGE
 ================================================
 */
-
-
 export function sendMessage(
-
     conversationId,
-
     content,
-
-    fileName=null,
-
-    fileType=null,
-
-    fileUrl=null,
-
-    replyToId=null
-
-){
-
-
-
-    if(!connected){
-
-
-
-        console.log(
-
-            "CHAT WS NON CONNECTE"
-
-        );
-
-
+    fileName = null,
+    fileType = null,
+    fileUrl = null,
+    replyToId = null
+) {
+    if (!connected) {
+        console.log("CHAT WS NON CONNECTE");
         return;
-
-
-
     }
 
-
-
-
-
-
-
-
     stompClient.publish({
-
-
-
-        destination:
-
-        "/app/chat.send",
-
-
-
-
-        body:JSON.stringify({
-
-
-
+        destination: "/app/chat.send",
+        body: JSON.stringify({
             conversationId,
-
-
             content,
-
-
             fileName,
-
-
             fileType,
-
-
             fileUrl,
-
-
             replyToId
-
-
-
         })
-
-
-
     });
-
-
-
 }
 
+/*
+================================================
+MODIFIER MESSAGE (AJOUTÉ)
+================================================
+*/
+export function editMessageWs(messageId, content, conversationId) {
+    if (!connected || !stompClient) {
+        console.log("CHAT WS NON CONNECTE POUR MODIFICATION");
+        return;
+    }
 
-
-
-
-
-
-
+    stompClient.publish({
+        destination: "/app/message.edit",
+        body: JSON.stringify({
+            messageId,
+            content,
+            conversationId
+        })
+    });
+}
 
 /*
 ================================================
 DELIVERED
 ================================================
 */
-
-
-export function sendDelivered(messageId){
-
-
-
-    if(!connected){
-
-
-        pendingDelivered.push(
-
-            messageId
-
-        );
-
-
+export function sendDelivered(messageId) {
+    if (!connected) {
+        pendingDelivered.push(messageId);
         return;
-
-
     }
-
-
-
-
-
     sendDeliveredNow(messageId);
-
-
-
 }
 
-
-
-
-
-
-function sendDeliveredNow(messageId){
-
-
-
-    if(!stompClient)
-
-        return;
-
-
-
+function sendDeliveredNow(messageId) {
+    if (!stompClient) return;
 
     stompClient.publish({
-
-
-
-        destination:
-
-        "/app/message.delivered",
-
-
-
-
-        body:JSON.stringify({
-
-
+        destination: "/app/message.delivered",
+        body: JSON.stringify({
             messageId
-
-
         })
-
-
-
     });
-
-
-
 }
-
-
-
-
-
-
-
-
 
 /*
 ================================================
 READ
 ================================================
 */
-
-
-export function sendRead(messageId){
-
-
-
-    if(!connected){
-
-
-        pendingRead.push(
-
-            messageId
-
-        );
-
-
+export function sendRead(messageId) {
+    if (!connected) {
+        pendingRead.push(messageId);
         return;
-
-
     }
-
-
-
-
-
     sendReadNow(messageId);
-
-
-
 }
 
-
-
-
-
-
-function sendReadNow(messageId){
-
-
-
-    if(!stompClient)
-
-        return;
-
-
-
+function sendReadNow(messageId) {
+    if (!stompClient) return;
 
     stompClient.publish({
-
-
-
-        destination:
-
-        "/app/message.read",
-
-
-
-
-        body:JSON.stringify({
-
-
+        destination: "/app/message.read",
+        body: JSON.stringify({
             messageId
-
-
         })
-
-
-
     });
-
-
-
 }
-
-
-
-
-
-
-
-
 
 /*
 ================================================
 TYPING
 ================================================
 */
-
-
-export function sendTyping(conversationId){
-
-
-
-    if(!connected || !stompClient){
-
-
+export function sendTyping(conversationId) {
+    if (!connected || !stompClient) {
         return;
-
-
     }
 
-
-
-
-
-
-
     stompClient.publish({
-
-
-
-        destination:
-
-        "/app/chat.typing",
-
-
-
-
-        body:JSON.stringify({
-
-
-
+        destination: "/app/chat.typing",
+        body: JSON.stringify({
             conversationId
-
-
-
         })
-
-
-
     });
-
-
-
 }
-
-
-
-
-
-
-
-
 
 /*
 ================================================
 DECONNECT CHAT
 ================================================
 */
-
-
-export function disconnectWebSocket(){
-
-
-
-    subscriptions.forEach(sub=>{
-
-
-        try{
-
-
+export function disconnectWebSocket() {
+    subscriptions.forEach(sub => {
+        try {
             sub.unsubscribe();
-
-
-        }
-
-        catch(error){}
-
-
-
+        } catch (error) {}
     });
 
+    subscriptions = [];
+    pendingDelivered = [];
+    pendingRead = [];
+    connected = false;
 
-
-
-
-    subscriptions=[];
-
-
-
-    pendingDelivered=[];
-
-
-    pendingRead=[];
-
-
-
-
-
-    connected=false;
-
-
-
-
-
-
-
-
-    if(stompClient){
-
-
-
+    if (stompClient) {
         stompClient.deactivate();
-
-
-
-        stompClient=null;
-
-
-
+        stompClient = null;
     }
-
-
-
 }

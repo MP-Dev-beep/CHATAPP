@@ -52,6 +52,11 @@ public class Conversation {
     private LocalDateTime createdAt;
 
 
+    // NOUVEAU: Champ pour l'archivage
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean archived = false;
+
 
 
 

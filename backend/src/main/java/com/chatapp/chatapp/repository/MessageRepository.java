@@ -65,4 +65,14 @@ public interface MessageRepository
             Long conversationId
     );
 
+
+
+    /*
+    Recherche dans les messages d'une conversation
+    */
+    List<Message> findByConversationIdAndContentContainingIgnoreCase(
+            Long conversationId,
+            String content
+    );
+
 }

@@ -59,4 +59,6 @@ public class MessageResponse {
 
     private boolean edited;
 
+    private LocalDateTime editedAt; // <-- AJOUTÉ ICI
+
 }

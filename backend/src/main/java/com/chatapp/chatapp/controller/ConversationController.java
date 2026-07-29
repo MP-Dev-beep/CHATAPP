@@ -124,4 +124,24 @@ public class ConversationController {
 
 
 
+    /*
+     *
+     * ARCHIVER / DESARCHIVER CONVERSATION
+     *
+     * PUT /api/conversations/{id}/archive
+     *
+     */
+    @PutMapping("/{id}/archive")
+    public ResponseEntity<ConversationResponse> toggleArchive(
+            Authentication authentication,
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+                conversationService.toggleArchiveConversation(
+                        id,
+                        authentication.getName()
+                )
+        );
+    }
+
 }
