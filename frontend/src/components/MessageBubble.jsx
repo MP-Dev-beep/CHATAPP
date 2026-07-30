@@ -151,14 +151,34 @@ function MessageBubble({
         }
     }
 
-    const fileUrl = message.fileUrl ? "http://localhost:8081" + message.fileUrl : null;
+    // Gestion correcte de l'URL du fichier / avatar avec le port 8081
+    const fileUrl = message.fileUrl 
+        ? (message.fileUrl.startsWith("http") ? message.fileUrl : "http://localhost:8081" + message.fileUrl) 
+        : null;
+
+    // Résolution de l'avatar de l'expéditeur (si inclus dans le message)
+    const senderAvatar = message.sender?.avatar 
+        ? (message.sender.avatar.startsWith("http") ? message.sender.avatar : `http://localhost:8081${message.sender.avatar}`) 
+        : null;
+
     const isDeleted = message.content === "Ce message a été supprimé";
 
     return (
         <div
             id={`message-${message.id}`}
             className={isMine ? "message-row mine" : "message-row"}
+            style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '10px' }}
         >
+            {/* Affichage de l'avatar du destinataire à gauche si le message ne vient pas de nous */}
+            {!isMine && (
+                <img 
+                    src={senderAvatar || "/default-avatar.png"} 
+                    alt="Avatar" 
+                    className="msg-sender-avatar"
+                    style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', marginBottom: '2px' }}
+                />
+            )}
+
             <div className="message-bubble" style={{ position: 'relative' }}>
 
                 {/* Bouton des trois points verticaux (⋮) en haut à droite (masqué si le message est déjà supprimé) */}
@@ -264,18 +284,18 @@ function MessageBubble({
                             </p>
                         )}
 
-                        {message.fileType === "IMAGE" && <img src={fileUrl} alt={message.fileName || ""} className="chat-image" />}
-                        {message.fileType === "VIDEO" && <video controls className="chat-video"><source src={fileUrl} /></video>}
-                        {message.fileType === "AUDIO" && <audio controls className="chat-audio"><source src={fileUrl} /></audio>}
+                        {message.fileType === "IMAGE" && <img src={fileUrl} alt={message.fileName || ""} className="chat-image" style={{ maxWidth: '200px', borderRadius: '8px', marginTop: '5px' }} />}
+                        {message.fileType === "VIDEO" && <video controls className="chat-video" style={{ maxWidth: '200px', borderRadius: '8px', marginTop: '5px' }}><source src={fileUrl} /></video>}
+                        {message.fileType === "AUDIO" && <audio controls className="chat-audio" style={{ marginTop: '5px' }}><source src={fileUrl} /></audio>}
                         {(message.fileType === "DOCUMENT" || message.fileType === "PDF") && (
-                            <a href={fileUrl} target="_blank" rel="noreferrer" className="chat-document">
+                            <a href={fileUrl} target="_blank" rel="noreferrer" className="chat-document" style={{ display: 'block', marginTop: '5px' }}>
                                 📄 <span>{message.fileName}</span>
                             </a>
                         )}
                     </>
                 )}
 
-                <div className="message-footer">
+                <div className="message-footer" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px', marginTop: '4px', fontSize: '11px' }}>
                     <span>{formatTime(message.sentAt)}</span>
                     {renderStatus()}
                 </div>

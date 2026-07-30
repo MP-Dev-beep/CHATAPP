@@ -1,204 +1,45 @@
 import axios from "axios";
 
-
-
 const api = axios.create({
-
-    baseURL:"http://localhost:8081/api",
-
-    withCredentials:true
-
+    baseURL: "http://localhost:8081/api",
+    withCredentials: true
 });
 
-
-
-
-
-
-
-/*
-========================================
-JWT AUTOMATIQUE
-========================================
-*/
-
-
+// JWT Automatique
 api.interceptors.request.use(
-
-    (config)=>{
-
-
-        const token = localStorage.getItem(
-            "token"
-        );
-
-
-        console.log(
-            "TOKEN ENVOYE :",
-            token
-        );
-
-
-
-        if(token){
-
-
-            config.headers.Authorization =
-                `Bearer ${token}`;
-
-
+    (config) => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
         }
-
-
-
         return config;
-
-
     },
-
-
-    (error)=>{
-
-
-        return Promise.reject(error);
-
-
-    }
-
-
+    (error) => Promise.reject(error)
 );
 
-
-
-
-
-
-
-
-
-/*
-========================================
-ERREURS AUTH
-========================================
-*/
-
-
+// Gestion erreurs
 api.interceptors.response.use(
-
-
-    response=>response,
-
-
-    error=>{
-
-
-        if(
-            error.response?.status===401
-            ||
-            error.response?.status===403
-        ){
-
-
-            console.log(
-                "SESSION EXPIREE"
-            );
-
-
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            console.log("SESSION EXPIREE");
         }
-
-
-
         return Promise.reject(error);
-
-
     }
-
-
-
 );
 
-
-
-
-
-
-
-
-
-/*
-========================================
-UPLOAD FICHIER
-IMAGE VIDEO AUDIO DOCUMENT
-========================================
-*/
-
-
-export async function uploadFile(file){
-
-
-
+// Upload de fichier (Image, Vidéo, Document, etc.)
+export async function uploadFile(file) {
     const formData = new FormData();
+    formData.append("file", file);
 
-
-
-    formData.append(
-
-        "file",
-
-        file
-
-    );
-
-
-
-
-
-
-    const response = await api.post(
-
-
-
-        "/files/upload",
-
-
-
-        formData,
-
-
-
-        {
-
-            headers:{
-
-                "Content-Type":
-                "multipart/form-data"
-
-            }
-
-
+    const response = await api.post("/files/upload", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data"
         }
+    });
 
-
-
-    );
-
-
-
-
-
-
-
-    return response.data;
-
-
+    return response.data; // Retourne l'objet FileUploadResponse (contenant .url)
 }
-
-
-
-
-
-
-
-
 
 export default api;
