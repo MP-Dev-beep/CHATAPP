@@ -12,7 +12,6 @@ import com.chatapp.chatapp.entity.User;
 import com.chatapp.chatapp.repository.ConversationRepository;
 import com.chatapp.chatapp.repository.UserRepository;
 
-
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
@@ -37,7 +36,6 @@ public class ConversationService {
 
 
 
-
     /*
     =================================================
         CREATION CONVERSATION
@@ -50,7 +48,6 @@ public class ConversationService {
             CreateConversationRequest request
     ){
 
-
         User currentUser =
 
                 userRepository.findByEmail(email)
@@ -60,7 +57,6 @@ public class ConversationService {
                                 "Utilisateur connecté introuvable"
                         )
                 );
-
 
 
 
@@ -78,8 +74,6 @@ public class ConversationService {
 
 
 
-
-
         if(currentUser.getId()
                 .equals(otherUser.getId())){
 
@@ -89,8 +83,6 @@ public class ConversationService {
             );
 
         }
-
-
 
 
 
@@ -136,12 +128,7 @@ public class ConversationService {
                 });
 
 
-
     }
-
-
-
-
 
 
 
@@ -154,6 +141,7 @@ public class ConversationService {
     */
 
 
+    @Transactional(readOnly = true)
     public List<ConversationResponse> getUserConversations(
             String email
     ){
@@ -168,8 +156,6 @@ public class ConversationService {
                                 "Utilisateur introuvable"
                         )
                 );
-
-
 
 
 
@@ -200,25 +186,45 @@ public class ConversationService {
                 .toList();
 
 
-
     }
+
+
 
 
 
     /*
     =================================================
-        ARCHIVER / DESARCHIVER UNE CONVERSATION
+        ARCHIVER
     =================================================
     */
-    public ConversationResponse toggleArchiveConversation(Long conversationId, String email) {
-        Conversation conversation = getConversationForUser(conversationId, email);
-        conversation.setArchived(!conversation.isArchived());
-        Conversation saved = conversationRepository.save(conversation);
+
+
+    public ConversationResponse toggleArchiveConversation(
+            Long conversationId,
+            String email
+    ) {
+
+        Conversation conversation =
+                getConversationForUser(
+                        conversationId,
+                        email
+                );
+
+
+        conversation.setArchived(
+                !conversation.isArchived()
+        );
+
+
+        Conversation saved =
+                conversationRepository.save(
+                        conversation
+                );
+
+
         return convertToResponse(saved);
+
     }
-
-
-
 
 
 
@@ -227,7 +233,7 @@ public class ConversationService {
 
     /*
     =================================================
-        VERIFICATION ACCES CONVERSATION
+        VERIFICATION ACCES
     =================================================
     */
 
@@ -237,11 +243,9 @@ public class ConversationService {
             User user
     ){
 
-
         return conversation.getUser1()
                 .getId()
                 .equals(user.getId())
-
 
                 ||
 
@@ -249,11 +253,7 @@ public class ConversationService {
                 .getId()
                 .equals(user.getId());
 
-
     }
-
-
-
 
 
 
@@ -272,7 +272,6 @@ public class ConversationService {
             String email
     ){
 
-
         User user =
 
                 userRepository.findByEmail(email)
@@ -282,7 +281,6 @@ public class ConversationService {
                                 "Utilisateur introuvable"
                         )
                 );
-
 
 
 
@@ -300,8 +298,6 @@ public class ConversationService {
 
 
 
-
-
         if(!canAccessConversation(
                 conversation,
                 user
@@ -312,10 +308,7 @@ public class ConversationService {
                     "Accès interdit à cette conversation"
             );
 
-
         }
-
-
 
 
 
@@ -330,118 +323,141 @@ public class ConversationService {
 
 
 
-
-
     /*
-=================================================
-    CONVERSION ENTITY -> DTO
-=================================================
-*/
-
-private ConversationResponse convertToResponse(
-        Conversation conversation
-){
-
-    String lastMessage = null;
-
-    LocalDateTime lastMessageTime = null;
-
-    long unreadCount = 0;
+    =================================================
+        CONVERSION ENTITY -> DTO
+    =================================================
+    */
 
 
+    private ConversationResponse convertToResponse(
+            Conversation conversation
+    ){
 
-    if (conversation.getMessages() != null
-            && !conversation.getMessages().isEmpty()) {
 
-        Message lastMessageEntity =
+        String lastMessage = null;
 
-                conversation.getMessages()
+        LocalDateTime lastMessageTime = null;
 
-                        .stream()
-
-                        .filter(message -> message.getSentAt() != null)
-
-                        .max(
-                                Comparator.comparing(
-                                        Message::getSentAt
-                                )
-                        )
-
-                        .orElse(null);
+        long unreadCount = 0;
 
 
 
-        if (lastMessageEntity != null) {
+        if(
+                conversation.getMessages() != null
+                &&
+                !conversation.getMessages().isEmpty()
+        ){
 
-            lastMessage = lastMessageEntity.getContent();
 
-            lastMessageTime = lastMessageEntity.getSentAt();
+            Message lastMessageEntity =
+
+                    conversation.getMessages()
+
+                    .stream()
+
+                    .filter(
+                            message ->
+                            message.getSentAt() != null
+                    )
+
+                    .max(
+                            Comparator.comparing(
+                                    Message::getSentAt
+                            )
+                    )
+
+                    .orElse(null);
+
+
+
+            if(lastMessageEntity != null){
+
+                lastMessage =
+                        lastMessageEntity.getContent();
+
+
+                lastMessageTime =
+                        lastMessageEntity.getSentAt();
+
+            }
+
+
+
+            unreadCount =
+
+                    conversation.getMessages()
+
+                    .stream()
+
+                    .filter(
+                            message ->
+                            !message.isRead()
+                    )
+
+                    .count();
+
 
         }
 
 
 
-        unreadCount =
 
-                conversation.getMessages()
 
-                        .stream()
+        return ConversationResponse.builder()
 
-                        .filter(message -> !message.isRead())
+                .id(
+                        conversation.getId()
+                )
 
-                        .count();
+                .createdAt(
+                        conversation.getCreatedAt()
+                )
+
+                .users(
+
+                        List.of(
+
+                                convertUser(
+                                        conversation.getUser1()
+                                ),
+
+                                convertUser(
+                                        conversation.getUser2()
+                                )
+
+                        )
+
+                )
+
+                .lastMessage(
+                        lastMessage
+                )
+
+                .lastMessageTime(
+                        lastMessageTime
+                )
+
+                .unreadCount(
+                        unreadCount
+                )
+
+                .build();
+
 
     }
 
 
 
-    return ConversationResponse.builder()
-
-            .id(
-                    conversation.getId()
-            )
-
-            .createdAt(
-                    conversation.getCreatedAt()
-            )
-
-            .users(
-
-                    List.of(
-
-                            convertUser(
-                                    conversation.getUser1()
-                            ),
-
-                            convertUser(
-                                    conversation.getUser2()
-                            )
-
-                    )
-
-            )
-
-            .lastMessage(
-                    lastMessage
-            )
-
-            .lastMessageTime(
-                    lastMessageTime
-            )
-
-            .unreadCount(
-                    unreadCount
-            )
-
-            .build();
-
-}
 
 
 
 
-
-
+    /*
+    =================================================
+        USER FRAIS DEPUIS DATABASE
+    =================================================
+    */
 
 
     private UserResponse convertUser(
@@ -449,30 +465,41 @@ private ConversationResponse convertToResponse(
     ){
 
 
-        return UserResponse.builder()
+        User freshUser =
 
-                .id(
+                userRepository.findById(
                         user.getId()
                 )
 
+                .orElse(user);
+
+
+
+
+        return UserResponse.builder()
+
+                .id(
+                        freshUser.getId()
+                )
+
                 .firstname(
-                        user.getFirstname()
+                        freshUser.getFirstname()
                 )
 
                 .lastname(
-                        user.getLastname()
+                        freshUser.getLastname()
                 )
 
                 .email(
-                        user.getEmail()
+                        freshUser.getEmail()
                 )
 
                 .avatar(
-                        user.getAvatar()
+                        freshUser.getAvatar()
                 )
 
                 .online(
-                        user.isOnline()
+                        freshUser.isOnline()
                 )
 
                 .build();

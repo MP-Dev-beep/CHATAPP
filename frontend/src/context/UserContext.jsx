@@ -23,7 +23,6 @@ import {
 
 
 
-
 const UserContext = createContext();
 
 
@@ -33,15 +32,21 @@ const UserContext = createContext();
 export function UserProvider({children}){
 
 
-    const [users,setUsers] = useState([]);
-
-    const [user,setUser] = useState(null);
-
-    const [onlineUsers,setOnlineUsers] = useState([]);
+    const [users,setUsers] =
+        useState([]);
 
 
+    const [user,setUser] =
+        useState(null);
 
-    const presenceStarted = useRef(false);
+
+    const [onlineUsers,setOnlineUsers] =
+        useState([]);
+
+
+
+    const presenceStarted =
+        useRef(false);
 
 
 
@@ -56,51 +61,40 @@ export function UserProvider({children}){
         try{
 
 
-            const data = await getUsers();
+            const data =
+                await getUsers();
 
 
 
-            console.log(
-                "USERS RECUS",
+            const list =
+                Array.isArray(data)
+                ?
                 data
-            );
+                :
+                [];
 
 
 
-            setUsers(
-                data || []
-            );
-
+            setUsers(list);
 
 
 
 
             setOnlineUsers(
 
-
-                (data || [])
-
-
+                list
                 .filter(
-
-                    user=>
-
-                    user.online
-
+                    u=>u.online
                 )
-
-
                 .map(
-
-                    user=>
-
-                    user.email
-
+                    u=>u.email
                 )
-
 
             );
 
+
+
+            return list;
 
 
         }
@@ -108,12 +102,12 @@ export function UserProvider({children}){
 
 
             console.error(
-
                 "Erreur chargement users",
-
                 error
-
             );
+
+
+            return [];
 
 
         }
@@ -136,27 +130,27 @@ export function UserProvider({children}){
 
 
             const data =
-
                 await getCurrentUser();
 
 
 
+            if(data){
 
 
-            setUser(data);
+                setUser(data);
+
+
+                localStorage.setItem(
+                    "userId",
+                    data.id
+                );
+
+
+            }
 
 
 
-
-
-            localStorage.setItem(
-
-                "userId",
-
-                data.id
-
-            );
-
+            return data;
 
 
         }
@@ -164,18 +158,19 @@ export function UserProvider({children}){
 
 
             console.error(
-
-                "Erreur utilisateur courant",
-
                 error
-
             );
+
+
+            return null;
 
 
         }
 
 
     }
+
+
 
 
 
@@ -204,26 +199,57 @@ export function UserProvider({children}){
     async function editProfile(data){
 
 
-        const updated =
+        try{
+
 
             await updateProfile(data);
 
 
 
-
-        setUser(updated);
-
-
-
-        await fetchUsers();
+            const updated =
+                await loadCurrentUser();
 
 
 
-        return updated;
 
+            await fetchUsers();
+
+
+
+
+
+            window.dispatchEvent(
+
+                new Event(
+                    "profileUpdated"
+                )
+
+            );
+
+
+
+            return updated;
+
+
+        }
+        catch(error){
+
+
+            console.error(
+                "Erreur update profil",
+                error
+            );
+
+
+            throw error;
+
+
+        }
 
 
     }
+
+
 
 
 
@@ -236,32 +262,59 @@ export function UserProvider({children}){
     async function updateAvatar(file){
 
 
-        const updated =
-
-            await uploadAvatar(file);
+        try{
 
 
-
-
-        setUser(updated);
+            const result =
+                await uploadAvatar(file);
 
 
 
 
-        await fetchUsers();
+            const updated =
+                await loadCurrentUser();
 
 
 
 
-        return updated;
+            await fetchUsers();
 
+
+
+
+
+
+            window.dispatchEvent(
+
+                new Event(
+                    "profileUpdated"
+                )
+
+            );
+
+
+
+            return result || updated;
+
+
+
+        }
+        catch(error){
+
+
+            console.error(
+                "Erreur avatar",
+                error
+            );
+
+
+            throw error;
+
+
+        }
 
 
     }
-
-
-
-
 
 
 
@@ -276,13 +329,10 @@ export function UserProvider({children}){
     useEffect(()=>{
 
 
-
         const token =
-
             localStorage.getItem(
                 "token"
             );
-
 
 
 
@@ -297,9 +347,7 @@ export function UserProvider({children}){
 
 
 
-
-
-        async function initialize(){
+        async function start(){
 
 
 
@@ -313,14 +361,13 @@ export function UserProvider({children}){
 
 
 
+            if(
+                !presenceStarted.current
+            ){
 
 
 
-            if(!presenceStarted.current){
-
-
-
-                presenceStarted.current = true;
+                presenceStarted.current=true;
 
 
 
@@ -329,192 +376,106 @@ export function UserProvider({children}){
 
                 connectPresence(
 
+                    status=>{
 
 
-                    (status)=>{
+                        if(
+                            !status?.email
+                        ){
 
+                            return;
 
-
-
-
-                        console.log(
-
-                            "PRESENCE EVENT",
-
-                            status
-
-                        );
+                        }
 
 
 
 
-
-
-
-
-                        /*
-                        =========================
-                        UPDATE USERS ONLINE
-                        =========================
-                        */
 
 
 
                         setUsers(prev=>
 
+                            prev.map(u=>
 
-
-                            prev.map(user=>
-
-
-
-
-                                user.email === status.email
-
+                                u.email
+                                ===
+                                status.email
 
                                 ?
 
-
                                 {
 
-
-                                    ...user,
-
+                                    ...u,
 
                                     online:
                                     status.online
 
-
-
                                 }
-
-
 
                                 :
 
-
-
-                                user
-
-
-
+                                u
 
                             )
-
-
 
                         );
 
 
 
-
-
-
-
-
-
-
-
-
-                        /*
-                        =========================
-                        LISTE USERS ONLINE
-                        =========================
-                        */
 
 
 
                         setOnlineUsers(prev=>{
 
 
-
-
-
                             if(status.online){
 
 
 
-
-
                                 if(
-
                                     prev.includes(
-
                                         status.email
-
                                     )
-
                                 ){
 
-
                                     return prev;
-
 
                                 }
 
 
 
-
-
                                 return [
-
 
                                     ...prev,
 
-
                                     status.email
 
-
-
                                 ];
-
 
 
                             }
 
 
 
-
-
-
-
                             return prev.filter(
-
-
 
                                 email=>
 
                                 email !== status.email
 
-
-
                             );
-
-
-
 
 
                         });
 
 
 
-
-
-
-
                     }
-
-
 
                 );
 
 
-
-
-
             }
-
-
 
 
 
@@ -525,9 +486,7 @@ export function UserProvider({children}){
 
 
 
-        initialize();
-
-
+        start();
 
 
 
@@ -538,17 +497,13 @@ export function UserProvider({children}){
         return ()=>{
 
 
-
             disconnectPresence();
-
 
 
             presenceStarted.current=false;
 
 
-
         };
-
 
 
 
@@ -567,62 +522,42 @@ export function UserProvider({children}){
 
 
 
-
-    return(
-
-
+    return (
 
         <UserContext.Provider
 
 
-
             value={{
-
 
                 user,
 
-
                 users,
-
 
                 onlineUsers,
 
 
-
                 fetchUsers,
-
 
                 search,
 
+                loadCurrentUser,
 
                 editProfile,
 
-
-                loadCurrentUser,
-
-
                 updateAvatar
-
 
 
             }}
 
 
-
         >
 
-
-
             {children}
-
-
 
         </UserContext.Provider>
 
 
-
     );
-
 
 
 }
@@ -636,30 +571,21 @@ export function UserProvider({children}){
 
 
 
-
-
 export function useUsers(){
 
 
-
     const context =
-
         useContext(
             UserContext
         );
 
 
 
-
-
     if(!context){
 
 
-
         throw new Error(
-
             "useUsers doit être utilisé dans UserProvider"
-
         );
 
 
@@ -667,10 +593,7 @@ export function useUsers(){
 
 
 
-
-
     return context;
-
 
 
 }

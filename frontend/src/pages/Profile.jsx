@@ -1,162 +1,492 @@
 import {
-    useState,
-    useEffect
+    useEffect,
+    useState
 } from "react";
+
 
 import {
     useUsers
 } from "../context/UserContext";
 
-import {
-    updateProfile
-} from "../services/user";
 
 import {
-    uploadFile
-} from "../services/api";
+    useConversation
+} from "../context/ConversationContext";
+
+
 
 function Profile(){
 
+
     const {
         user,
-        loadCurrentUser
+        editProfile,
+        updateAvatar
     } = useUsers();
 
-    const [firstname, setFirstname] = useState(
-        user?.firstname || ""
-    );
 
-    const [lastname, setLastname] = useState(
-        user?.lastname || ""
-    );
 
-    const [avatar, setAvatar] = useState(
-        user?.avatar || ""
-    );
+    const {
+        refreshConversationUsers
+    } = useConversation();
 
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [preview, setPreview] = useState("");
 
-    // Mettre à jour les champs locaux si l'objet user change dans le contexte
-    useEffect(() => {
-        if (user) {
-            setFirstname(user.firstname || "");
-            setLastname(user.lastname || "");
-            setAvatar(user.avatar || "");
+
+
+    const [firstname,setFirstname] =
+        useState("");
+
+    const [lastname,setLastname] =
+        useState("");
+
+    const [selectedFile,setSelectedFile] =
+        useState(null);
+
+    const [preview,setPreview] =
+        useState("");
+
+    const [avatarUrl,setAvatarUrl] =
+        useState("");
+
+
+
+
+
+
+
+
+
+    useEffect(()=>{
+
+
+        if(user){
+
+
+            setFirstname(
+                user.firstname || ""
+            );
+
+
+            setLastname(
+                user.lastname || ""
+            );
+
+
+
+            setAvatarUrl(
+                user.avatar || ""
+            );
+
+
         }
-    }, [user]);
 
-    function handleFileChange(e) {
-        const file = e.target.files[0];
-        if (file) {
-            setSelectedFile(file);
-            setPreview(URL.createObjectURL(file));
-        }
-    }
 
-    async function handleSave(){
-        try{
-            let uploadedAvatarUrl = avatar;
+    },[user]);
 
-            // 1. Si un nouveau fichier image a été choisi, on l'upload d'abord
-            if (selectedFile) {
-                const uploadRes = await uploadFile(selectedFile);
-                uploadedAvatarUrl = uploadRes.url; // ex: "/uploads/uuid.png"
+
+
+
+
+
+
+
+
+
+
+    useEffect(()=>{
+
+
+        return ()=>{
+
+
+            if(preview){
+
+
+                URL.revokeObjectURL(
+                    preview
+                );
+
+
             }
 
-            // 2. On envoie ensuite la mise à jour complète du profil
-            await updateProfile({
+
+        };
+
+
+    },[preview]);
+
+
+
+
+
+
+
+
+
+
+
+    function handleFileChange(e){
+
+
+        const file =
+            e.target.files[0];
+
+
+
+        if(file){
+
+
+            setSelectedFile(file);
+
+
+
+            setPreview(
+                URL.createObjectURL(file)
+            );
+
+
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+    async function handleSave(){
+
+
+        try{
+
+
+
+            let newAvatar =
+                avatarUrl;
+
+
+
+
+
+
+            if(selectedFile){
+
+
+
+                const uploaded =
+                    await updateAvatar(
+                        selectedFile
+                    );
+
+
+
+                if(uploaded?.url){
+
+
+                    newAvatar =
+                        uploaded.url;
+
+
+                }
+                else if(uploaded?.avatar){
+
+
+                    newAvatar =
+                        uploaded.avatar;
+
+
+                }
+
+
+
+            }
+
+
+
+
+
+
+            await editProfile({
+
+
                 firstname,
+
+
                 lastname,
-                avatar: uploadedAvatarUrl
+
+
+                avatar:newAvatar
+
+
+
             });
 
-            await loadCurrentUser();
+
+
+
+
+
+
+            await refreshConversationUsers();
+
+
+
+
+
+
+
+            setAvatarUrl(
+                newAvatar
+            );
+
+
+
             setSelectedFile(null);
 
+
+
+            setPreview("");
+
+
+
+
+
+
             alert(
-                "Profil modifié"
+                "Profil modifié avec succès"
             );
+
+
 
         }
         catch(error){
-            console.error(error);
-            alert("Erreur lors de la mise à jour du profil");
+
+
+            console.error(
+                error
+            );
+
+
+            alert(
+                "Erreur modification profil"
+            );
+
+
         }
+
+
     }
 
-    // Résolution correcte de l'URL de l'avatar pour l'affichage
-    const currentAvatarUrl = preview || (avatar ? (avatar.startsWith("http") ? avatar : `http://localhost:8081${avatar}`) : null);
+
+
+
+
+
+
+
+
+    function getAvatar(value){
+
+
+        if(!value){
+
+            return null;
+
+        }
+
+
+
+        const url =
+            value.startsWith("http")
+
+            ?
+
+            value
+
+            :
+
+            `http://localhost:8081${value}`;
+
+
+
+        return (
+            url
+            +
+            "?t="
+            +
+            Date.now()
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+    const image =
+        preview
+        ||
+        getAvatar(avatarUrl);
+
+
+
+
+
+
+
+
 
     return (
 
+
         <div className="profile-card">
 
-            <div className="profile-avatar" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+
+
+
+
+            <div
+                className="profile-avatar"
+                style={{
+                    overflow:"hidden",
+                    display:"flex",
+                    alignItems:"center",
+                    justifyContent:"center"
+                }}
+            >
+
+
                 {
-                currentAvatarUrl
-                ?
-                <img src={currentAvatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                :
-                (
-                    user?.firstname
+
+                    image
+
                     ?
-                    user.firstname.charAt(0).toUpperCase()
+
+                    <img
+
+                        src={image}
+
+                        alt="avatar"
+
+                        style={{
+
+                            width:"100%",
+
+                            height:"100%",
+
+                            objectFit:"cover"
+
+                        }}
+
+                    />
+
                     :
+
+                    firstname
+
+                    ?
+
+                    firstname
+                    .charAt(0)
+                    .toUpperCase()
+
+                    :
+
                     "?"
-                )
+
                 }
+
+
             </div>
 
-            {/* Input caché ou stylisé pour changer l'avatar */}
-            <div style={{ margin: '10px 0' }}>
-                <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleFileChange}
-                    style={{ fontSize: '12px' }}
-                />
-            </div>
+
+
+
+
+
+
+
+            <input
+
+                type="file"
+
+                accept="image/*"
+
+                onChange={handleFileChange}
+
+            />
+
+
+
+
+
+
+
 
             <h2>
-
                 Mon profil
-
             </h2>
 
-            <div className="profile-name">
 
-                {user?.firstname}
 
-                {" "}
 
-                {user?.lastname}
 
-            </div>
+
+
 
             <input
 
                 value={firstname}
 
-                onChange={
-                    e=>setFirstname(e.target.value)
-                }
-
                 placeholder="Prénom"
 
+                onChange={
+                    e=>
+                    setFirstname(
+                        e.target.value
+                    )
+                }
+
             />
+
+
+
+
+
+
+
 
             <input
 
                 value={lastname}
 
-                onChange={
-                    e=>setLastname(e.target.value)
-                }
-
                 placeholder="Nom"
 
+                onChange={
+                    e=>
+                    setLastname(
+                        e.target.value
+                    )
+                }
+
             />
+
+
+
+
+
+
+
 
             <button
 
@@ -168,10 +498,17 @@ function Profile(){
 
             </button>
 
+
+
+
+
         </div>
+
 
     );
 
+
 }
+
 
 export default Profile;

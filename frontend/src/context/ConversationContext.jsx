@@ -3,7 +3,8 @@ import {
     useContext,
     useState,
     useEffect,
-    useRef
+    useRef,
+    useCallback
 } from "react";
 
 import {
@@ -25,286 +26,704 @@ import {
     useUsers
 } from "./UserContext";
 
+
 const ConversationContext = createContext();
+
+
 
 export function ConversationProvider({children}){
 
+
     const {
-        user
+        user,
+        users
     } = useUsers();
 
-    const [
-        conversations,
-        setConversations
-    ] = useState([]);
 
-    const [
-        conversationId,
-        setConversationId
-    ] = useState(null);
 
-    const [
-        messages,
-        setMessages
-    ] = useState([]);
+    const [conversations,setConversations] = useState([]);
 
-    const [
-        typingUser,
-        setTypingUser
-    ] = useState(null);
+    const [conversationId,setConversationId] = useState(null);
 
-    const [
-        replyMessage,
-        setReplyMessage
-    ] = useState(null);
+    const [messages,setMessages] = useState([]);
+
+    const [typingUser,setTypingUser] = useState(null);
+
+    const [replyMessage,setReplyMessage] = useState(null);
+
+
 
     const typingTimer = useRef(null);
-    const currentSocketConversation = useRef(null);
 
-    async function loadConversations(){
-        try{
-            const data = await getConversations();
-            setConversations(
-                Array.isArray(data)
-                ? data
-                : []
+    const socketConversation = useRef(null);
+
+    const mounted = useRef(false);
+
+
+
+
+
+    const clearTyping = ()=>{
+
+        if(typingTimer.current){
+
+            clearTimeout(
+                typingTimer.current
             );
+
+            typingTimer.current=null;
+        }
+
+
+        setTypingUser(null);
+
+    };
+
+
+
+
+
+
+
+    const loadConversations = useCallback(async()=>{
+
+
+        try{
+
+
+            const data =
+                await getConversations();
+
+
+
+            const list =
+                Array.isArray(data)
+                ?
+                data.map(conv=>{
+
+
+                    return {
+
+                        ...conv,
+
+                        users:
+                        conv.users?.map(convUser=>{
+
+
+                            const fresh =
+                                users.find(
+                                    u =>
+                                    Number(u.id)
+                                    ===
+                                    Number(convUser.id)
+                                );
+
+
+                            return fresh
+                            ?
+                            {
+                                ...convUser,
+                                firstname:fresh.firstname,
+                                lastname:fresh.lastname,
+                                avatar:fresh.avatar,
+                                online:fresh.online
+                            }
+                            :
+                            convUser;
+
+
+                        })
+
+                    };
+
+
+                })
+                :
+                [];
+
+
+
+            setConversations(list);
+
+
+
         }
         catch(error){
+
             console.error(
                 "Erreur chargement conversations",
                 error
             );
+
         }
+
+
+    },[users]);
+
+
+
+
+
+
+
+
+
+
+    function handleProfileUpdate(){
+
+        loadConversations();
+
     }
 
-    function clearTyping(){
-        if(typingTimer.current){
-            clearTimeout(
-                typingTimer.current
-            );
-            typingTimer.current=null;
-        }
-        setTypingUser(null);
-    }
+
+
+
+
+
+
+
 
     async function openConversation(id){
-        if(!user || !id)
+
+
+        if(!user || !id){
+
             return;
 
+        }
+
+
+
+        if(
+            Number(socketConversation.current)
+            ===
+            Number(id)
+        ){
+
+            return;
+
+        }
+
+
+
         try{
-            // éviter plusieurs connexions identiques
-            if(
-                currentSocketConversation.current
-                ===
-                id
-            ){
-                return;
-            }
+
 
             disconnectWebSocket();
+
+
             clearTyping();
 
-            currentSocketConversation.current=id;
+
+
+            socketConversation.current=id;
+
+
+
             setConversationId(id);
+
+
+
 
             const history =
                 await getMessages(id);
 
+
+
             setMessages(
                 Array.isArray(history)
-                ? history
-                : []
+                ?
+                history
+                :
+                []
             );
 
+
+
+
+
             connectWebSocket(
+
+
                 id,
+
+
                 user.id,
+
+
+
                 (message)=>{
-                    if(!message || !message.id)
+
+
+                    if(!message?.id){
+
                         return;
 
-                    // CORRECTION ICI : Mise à jour en temps réel (Ajout ou Remplacement si modifié)
-                    setMessages(prev => {
-                        const index = prev.findIndex(
-                            m => Number(m.id) === Number(message.id)
-                        );
+                    }
 
-                        if(index !== -1){
-                            // Le message existe déjà -> On le remplace (ex: modification)
-                            const updated = [...prev];
-                            updated[index] = message;
-                            return updated;
+
+
+
+
+                    setMessages(prev=>{
+
+
+                        const exists =
+                            prev.some(
+                                m =>
+                                Number(m.id)
+                                ===
+                                Number(message.id)
+                            );
+
+
+                        if(exists){
+
+
+                            return prev.map(m=>
+
+                                Number(m.id)
+                                ===
+                                Number(message.id)
+
+                                ?
+                                message
+
+                                :
+                                m
+
+                            );
+
                         }
 
-                        // Nouveau message -> On l'ajoute à la fin
+
+
                         return [
                             ...prev,
                             message
                         ];
+
+
                     });
 
+
+
+
+
+
                     if(
+
                         Number(message.senderId)
                         !==
                         Number(user.id)
+
                     ){
+
                         sendDelivered(
                             message.id
                         );
+
                     }
 
+
+
+
+
+
                     setConversations(prev=>
+
                         prev.map(conv=>
+
+
                             Number(conv.id)
                             ===
                             Number(id)
+
                             ?
+
                             {
+
                                 ...conv,
+
                                 lastMessage:
-                                    message.content,
+                                message.content,
+
                                 lastMessageTime:
-                                    message.sentAt
+                                message.sentAt
+
                             }
+
                             :
+
                             conv
+
+
                         )
+
                     );
+
+
                 },
+
+
+
+
+
                 (status)=>{
-                    if(!status || !status.id)
+
+
+                    if(!status?.id){
+
                         return;
 
-                    setMessages(prev=>
-                        prev.map(message=>
-                            Number(message.id)
-                            ===
-                            Number(status.id)
-                            ?
-                            {
-                                ...message,
-                                delivered:
-                                    status.delivered,
-                                read:
-                                    status.read,
-                                deliveredAt:
-                                    status.deliveredAt,
-                                readAt:
-                                    status.readAt
-                            }
-                            :
-                            message
-                        )
-                    );
-                },
-                (username)=>{
-                    clearTyping();
-
-                    if(
-                        typeof username
-                        !==
-                        "string"
-                        ||
-                        username.trim()===""
-                    ){
-                        return;
                     }
 
-                    setTypingUser(
-                        username
+
+
+                    setMessages(prev=>
+
+                        prev.map(msg=>
+
+
+                            Number(msg.id)
+                            ===
+                            Number(status.id)
+
+                            ?
+
+                            {
+
+                                ...msg,
+
+                                delivered:
+                                status.delivered,
+
+                                read:
+                                status.read,
+
+                                deliveredAt:
+                                status.deliveredAt,
+
+                                readAt:
+                                status.readAt
+
+                            }
+
+                            :
+
+                            msg
+
+
+                        )
+
                     );
+
+
+                },
+
+
+
+
+
+                (typing)=>{
+
+
+                    clearTyping();
+
+
+
+                    if(
+                        !typing
+                    ){
+
+                        return;
+
+                    }
+
+
+
+                    setTypingUser(
+                        typing
+                    );
+
+
 
                     typingTimer.current =
                         setTimeout(()=>{
+
+
                             setTypingUser(null);
+
+
                         },2000);
+
+
+
                 }
+
+
+
             );
 
+
+
+
+
+
             history.forEach(message=>{
+
+
                 if(
+
                     Number(message.senderId)
                     !==
                     Number(user.id)
+
                     &&
+
                     !message.read
+
                 ){
+
                     sendRead(
                         message.id
                     );
+
                 }
+
+
             });
 
+
+
+
+
+
             setConversations(prev=>
+
+
                 prev.map(conv=>
+
+
                     Number(conv.id)
                     ===
                     Number(id)
+
                     ?
+
                     {
+
                         ...conv,
+
                         unreadCount:0
+
                     }
+
                     :
+
                     conv
+
+
                 )
+
+
             );
+
+
+
         }
         catch(error){
+
             console.error(
                 "Erreur ouverture conversation",
                 error
             );
+
         }
+
+
+
     }
 
+
+
+
+
+
+
+
+
+
+
     useEffect(()=>{
-        if(user){
-            loadConversations();
+
+
+        if(!user){
+
+            return;
+
         }
 
+
+
+        if(!mounted.current){
+
+            mounted.current=true;
+
+            loadConversations();
+
+        }
+
+
+
+        window.addEventListener(
+            "profileUpdated",
+            handleProfileUpdate
+        );
+
+
+
         return ()=>{
-            clearTyping();
-            disconnectWebSocket();
-            currentSocketConversation.current=null;
+
+
+            window.removeEventListener(
+                "profileUpdated",
+                handleProfileUpdate
+            );
+
+
         };
-    },[user]);
+
+
+
+    },[user,loadConversations]);
+
+
+
+
+
+
+
+
+
+
+
+    useEffect(()=>{
+
+
+        return ()=>{
+
+
+            clearTyping();
+
+
+            disconnectWebSocket();
+
+
+            socketConversation.current=null;
+
+
+        };
+
+
+    },[]);
+
+
+
+
+
+
+
+
+
+
 
     return (
+
         <ConversationContext.Provider
-            value={
-                {
-                    conversations,
-                    conversationId,
-                    messages,
-                    typingUser,
-                    setMessages,
-                    openConversation,
-                    loadConversations,
-                    refreshConversations:
-                        loadConversations,
-                    replyMessage,
-                    setReplyMessage
-                }
-            }
+
+
+            value={{
+
+                conversations,
+
+                conversationId,
+
+                messages,
+
+                typingUser,
+
+
+                setMessages,
+
+
+                openConversation,
+
+
+                loadConversations,
+
+
+                refreshConversations:
+                loadConversations,
+
+
+                refreshConversationUsers:
+                loadConversations,
+
+
+                replyMessage,
+
+
+                setReplyMessage
+
+
+            }}
+
+
         >
+
+
             {children}
+
+
         </ConversationContext.Provider>
+
+
     );
+
+
 }
 
+
+
+
+
+
+
+
 export function useConversation(){
+
+
     const context =
         useContext(
             ConversationContext
         );
 
+
+
     if(!context){
+
+
         throw new Error(
             "useConversation doit être utilisé dans ConversationProvider"
         );
+
+
     }
 
+
+
     return context;
+
+
 }
